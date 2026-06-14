@@ -120,6 +120,46 @@ const dictionary = [
     category: "culture"
   },
   {
+    term: "valid",
+    classic: "good, acceptable, or genuinely cool",
+    genz: "valid",
+    definition: "A positive approval word used when something feels authentic, sensible, or attractive.",
+    usageExample: "That outfit is valid and the color choice works well.",
+    tone: "slang",
+    synonyms: ["good", "acceptable", "cool"],
+    category: "culture"
+  },
+  {
+    term: "cap",
+    classic: "lie or exaggeration",
+    genz: "cap",
+    definition: "Used to call out something as false or overstated.",
+    usageExample: "That timeline is cap if nobody has started yet.",
+    tone: "slang",
+    synonyms: ["lie", "exaggeration", "falsehood"],
+    category: "slang"
+  },
+  {
+    term: "drip",
+    classic: "style or fashion sense",
+    genz: "drip",
+    definition: "A term for a strong fashion look or stylish presentation.",
+    usageExample: "The poster design has drip because the typography is on point.",
+    tone: "slang",
+    synonyms: ["style", "fashion", "look"],
+    category: "culture"
+  },
+  {
+    term: "cheugy",
+    classic: "uncool, outdated, or trying too hard",
+    genz: "cheugy",
+    definition: "A Gen Z term for something that feels stale, overly polished, or behind the trend.",
+    usageExample: "That phrase feels cheugy in a modern chat.",
+    tone: "slang",
+    synonyms: ["outdated", "uncool", "tacky"],
+    category: "slang"
+  },
+  {
     term: "respectfully",
     classic: "politely but directly",
     genz: "respectfully",
@@ -345,52 +385,86 @@ function buildPrompt(text, mode) {
   return [
     {
       role: "system",
-      content: "You power Genza, an intergenerational language bridge. Preserve meaning. Do not add facts. Transform tone, decode slang or formal phrasing, simplify readability, normalize emotional intensity, and explain cultural/context changes. Return strict JSON with translated, explanation, tone, readability, and confidence."
+      content: "You power Genza, an intergenerational language bridge. Preserve meaning. Do not add facts. Transform tone, decode slang or formal phrasing, simplify readability, normalize emotional intensity, and explain cultural/context changes. Return strict JSON with translated, explanation, tone, readability, confidence, extractedText, and screenshotSummary."
     },
     {
       role: "user",
-      content: `Rewrite this message into ${target}. Explain the most important changes in 2-4 short bullets. Message: ${text}`
+      content: `Rewrite this message into ${target}. Explain the most important changes in 2-4 short bullets. If an image is included, OCR it first and use the screenshot text as context. Message: ${text}`
     }
   ];
 }
 
-async function translateWithOpenAI(text, mode) {
-  if (!process.env.OPENAI_API_KEY) {
+function buildGeminiParts(text, mode, imageDataUrl) {
+  const prompt = buildPrompt(text, mode).map((message) => `${message.role.toUpperCase()}: ${message.content}`).join("\n\n");
+  const parts = [{ text: prompt }];
+
+  if (imageDataUrl) {
+    const match = imageDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (match) {
+      parts.push({
+        inline_data: {
+          mime_type: match[1],
+          data: match[2]
+        }
+      });
+    }
+  }
+
+  return parts;
+}
+
+function parseJsonResponse(raw) {
+  const cleaned = String(raw || "").trim().replace(/^```json\s*/i, "").replace(/```$/i, "");
+  return JSON.parse(cleaned);
+}
+
+async function translateWithGemini(text, mode, imageDataUrl = "") {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
     return null;
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+      "x-goog-api-key": apiKey
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      messages: buildPrompt(text, mode),
-      temperature: 0.4,
-      response_format: { type: "json_object" }
+      contents: [
+        {
+          role: "user",
+          parts: buildGeminiParts(text, mode, imageDataUrl)
+        }
+      ],
+      generationConfig: {
+        temperature: 0.4,
+        responseMimeType: "application/json"
+      }
     })
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI request failed with ${response.status}`);
+    throw new Error(`Gemini request failed with ${response.status}`);
   }
 
   const payload = await response.json();
-  const raw = payload.choices?.[0]?.message?.content;
+  const raw = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
   if (!raw) {
-    throw new Error("OpenAI returned an empty response");
+    throw new Error("Gemini returned an empty response");
   }
 
-  const parsed = JSON.parse(raw);
+  const parsed = parseJsonResponse(raw);
   return {
     translated: String(parsed.translated || ""),
     explanation: Array.isArray(parsed.explanation) ? parsed.explanation.slice(0, 4).map(String) : [],
     tone: String(parsed.tone || (mode === "genz_to_adult" ? "clear" : "casual")),
     readability: Number(parsed.readability || scoreReadability(parsed.translated || text, mode)),
-    confidence: Number(parsed.confidence || 0.9)
+    confidence: Number(parsed.confidence || 0.9),
+    extractedText: String(parsed.extractedText || ""),
+    screenshotSummary: String(parsed.screenshotSummary || "")
   };
 }
 
-export { dictionary, fallbackTranslate, translateWithOpenAI };
+export { dictionary, fallbackTranslate, translateWithGemini };

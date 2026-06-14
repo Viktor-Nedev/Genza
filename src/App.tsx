@@ -22,7 +22,7 @@ import {
   X
 } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { getClientFallback, translateMessage } from "./api";
+import { getClientFallback, translateMessage, translateScreenshot } from "./api";
 import { architecture, dictionary, examples, pitchPoints } from "./data";
 import type { DictionaryEntry, Example, Mode, Page, TranslationResult, VisualMode } from "./types";
 import "./App.css";
@@ -30,6 +30,8 @@ import "./App.css";
 const defaultText = "This assignment is cooked bro.";
 const optionalSplineScene = import.meta.env.VITE_SPLINE_SCENE?.trim() || "";
 const Spline = lazy(() => import("@splinetool/react-spline"));
+const genzLogo = new URL("../images/young_people_logo.png", import.meta.url).href;
+const classicLogo = new URL("../images/oldpeople_logo.png", import.meta.url).href;
 
 function modeLabel(mode: Mode) {
   return mode === "genz_to_adult" ? "Gen Z → Classic" : "Classic → Gen Z";
@@ -163,19 +165,13 @@ function HomePage({
             <div className="photo-collage">
               <div className="photo-card photo-card--main reveal-item">
                 <img src="/Generation-Z.jpg" alt="Generation Z group" loading="lazy" />
-                <div className="photo-badge">Gen Z</div>
+
               </div>
               <div className="photo-card photo-card--secondary reveal-item">
                 <img src="/old_people.jpg" alt="Classic generation adults" loading="lazy" />
-                <div className="photo-badge classic-badge">Classic</div>
+
               </div>
-              <div className="photo-card photo-card--accent reveal-item">
-                <img src="/old_people_with_a_kid.webp" alt="Generations together" loading="lazy" />
-              </div>
-              <div className="bridge-pill">
-                <ArrowRightLeft size={16} />
-                <span>Language Bridge</span>
-              </div>
+
             </div>
           )}
         </div>
@@ -192,7 +188,7 @@ function HomePage({
             <img src="/Gen-Z-.jpeg" alt="Gen Z style" loading="lazy" />
           </div>
           <div className="showcase-tile-info">
-            <Sparkles size={19} />
+            <Sparkles size={40} />
             <strong>Gen Z Mode</strong>
             <span>Vibrant light background, neon effects, bouncing cards, slang tags.</span>
           </div>
@@ -203,7 +199,7 @@ function HomePage({
           onClick={() => onSwitchVisual("classic")}
         >
           <div className="showcase-tile-img">
-            <img src="/old_people.jpg" alt="Classic style" loading="lazy" />
+            <img src="/old_people2.avif" alt="Classic style" loading="lazy" />
           </div>
           <div className="showcase-tile-info">
             <Library size={19} />
@@ -215,17 +211,11 @@ function HomePage({
 
       {/* Bento Cards */}
       <section className="bento-grid" aria-label="Genza product overview">
-        <article className="bento-tile large reveal-item deep-translation-tile">
+        <article className="bento-tile wide reveal-item deep-translation-tile">
           <Brain size={22} />
           <h2>Deep Translation System</h2>
           <p>The engine uses LLM prompt engineering, sentiment scoring, and context adaptation. Rather than simple word swapping, it shifts entire tones and registers.</p>
           <div className="bento-glow" />
-          <div className="bento-img-bg">
-            <img src="/genz_swang_sticker.png" alt="" aria-hidden="true" loading="lazy" />
-          </div>
-          <div className="section-sticker-strip" aria-hidden="true">
-            <img src="/old_people_sticker.png" alt="" className="section-sticker section-sticker--soft" loading="lazy" />
-          </div>
         </article>
         <article className="bento-tile reveal-item direction-tile">
           <ArrowRightLeft size={20} />
@@ -251,16 +241,14 @@ function HomePage({
               <li key={item}>{item}</li>
             ))}
           </ul>
-          <div className="section-sticker-strip" aria-hidden="true">
-            <img src="/old_people_with_a_kid.webp" alt="" className="section-sticker section-sticker--wide" loading="lazy" />
-          </div>
+
         </article>
         <article className="bento-tile reveal-item pitch-tile">
           <ShieldCheck size={20} />
           <h2>Hackathon Pitch Focus</h2>
           <p>{pitchPoints[0]} Solution: Genza offers social bridges across age demographics.</p>
           <div className="section-sticker-strip" aria-hidden="true">
-            <img src="/old_people.jpg" alt="" className="section-sticker section-sticker--soft" loading="lazy" />
+            <img src="/old_people_sticker.png" alt="" className="section-sticker section-sticker--soft" loading="lazy" />
           </div>
         </article>
         <article className="bento-tile reveal-item stack-tile">
@@ -294,7 +282,10 @@ function BridgePage({
   onTranslate,
   onCopy,
   onLoadExample,
-  onOpenLexicon
+  onOpenLexicon,
+  screenshotName,
+  analysisText,
+  onScreenshotUpload
 }: {
   mode: Mode;
   setMode: (mode: Mode) => void;
@@ -313,6 +304,9 @@ function BridgePage({
   onCopy: () => void;
   onLoadExample: (example: Example) => void;
   onOpenLexicon: () => void;
+  screenshotName: string;
+  analysisText: string;
+  onScreenshotUpload: (file: File | null) => void;
 }) {
   return (
     <section className="bridge-page">
@@ -354,6 +348,15 @@ function BridgePage({
             maxLength={1200}
             placeholder="Write a message…"
           />
+          <label className="screenshot-upload">
+            <span>Upload screenshot</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(event) => onScreenshotUpload(event.target.files?.[0] || null)}
+            />
+          </label>
+          {screenshotName ? <div className="screenshot-name">{screenshotName}</div> : null}
           <div className="pane-foot">
             <span>{text.length}/1200</span>
             <button className="btn btn-primary" type="button" onClick={onTranslate} disabled={isTranslating || isPending}>
@@ -376,6 +379,7 @@ function BridgePage({
           <div className={`result-box ${result ? "filled" : ""}`}>
             {result?.translated || "Your translated message will appear here."}
           </div>
+          {analysisText ? <div className="screenshot-analysis">{analysisText}</div> : null}
           {result ? <div className="reaction-pop">Translation ready</div> : null}
           <div className="metric-row" aria-label="Translation metrics">
             <span>Tone: {result?.tone || "waiting"}</span>
@@ -502,7 +506,7 @@ function LexiconBook({
         <div className="book-toolbar">
           <div>
             <span className="vibe-badge">SYSTEM DICTIONARY</span>
-            <h2>{visualMode === "classic" ? "The Classical Encyclopedia" : "📖 DECODING CYBER LEXICON"}</h2>
+            <h2>{visualMode === "classic" ? "The Classical Encyclopedia" : "Decoding Cyber Lexicon"}</h2>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close lexicon">
             <X size={18} />
@@ -607,7 +611,10 @@ function App() {
   const [mode, setMode] = useState<Mode>("genz_to_adult");
   const [visualMode, setVisualMode] = useState<VisualMode>("genz");
   const [text, setText] = useState(defaultText);
+  const [screenshotDataUrl, setScreenshotDataUrl] = useState("");
+  const [screenshotName, setScreenshotName] = useState("");
   const [result, setResult] = useState<TranslationResult | null>(null);
+  const [analysisText, setAnalysisText] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [showExplain, setShowExplain] = useState(true);
@@ -679,11 +686,16 @@ function App() {
     setCopied(false);
     setIsTranslating(true);
     try {
-      const nextResult = await translateMessage(text, mode);
+      const nextResult = screenshotDataUrl
+        ? await translateScreenshot(screenshotDataUrl, mode, text)
+        : await translateMessage(text, mode);
+      const extra = [nextResult.extractedText, nextResult.screenshotSummary].filter(Boolean).join(" ").trim();
+      setAnalysisText(extra);
       startTransition(() => setResult(nextResult));
     } catch (translationError) {
       const fallback = getClientFallback(mode, text);
       startTransition(() => setResult(fallback));
+      setAnalysisText("");
       setError(translationError instanceof Error ? translationError.message : "Translation failed.");
     } finally {
       setIsTranslating(false);
@@ -694,7 +706,26 @@ function App() {
     setText(example.text);
     setMode(example.mode);
     setResult(null);
+    setAnalysisText("");
+    setScreenshotDataUrl("");
+    setScreenshotName("");
     setError("");
+  }
+
+  function handleScreenshotUpload(file: File | null) {
+    if (!file) {
+      setScreenshotDataUrl("");
+      setScreenshotName("");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setScreenshotDataUrl(String(reader.result || ""));
+      setScreenshotName(file.name);
+      setError("");
+    };
+    reader.readAsDataURL(file);
   }
 
   async function copyOutput() {
@@ -721,12 +752,8 @@ function App() {
       {/* Navigation */}
       <nav className="nav-shell" aria-label="Main navigation">
         <button className="brand-lockup" type="button" onClick={() => setPage("home")}>
-          <span className="brand-mark">
-            <ArrowRightLeft size={20} />
-          </span>
-          <span>
-            <strong>Genza</strong>
-            <small>Language Bridge</small>
+          <span className={`brand-mark ${visualMode === "genz" ? "brand-mark--genz" : "brand-mark--classic"}`}>
+            <img src={visualMode === "genz" ? genzLogo : classicLogo} alt="" aria-hidden="true" loading="eager" />
           </span>
         </button>
 
@@ -776,6 +803,9 @@ function App() {
             onCopy={copyOutput}
             onLoadExample={loadExample}
             onOpenLexicon={() => setLexiconOpen(true)}
+            screenshotName={screenshotName}
+            analysisText={analysisText}
+            onScreenshotUpload={handleScreenshotUpload}
           />
         ) : null}
 

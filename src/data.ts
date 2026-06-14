@@ -121,6 +121,66 @@ export const dictionary: DictionaryEntry[] = [
     category: "culture"
   },
   {
+    term: "valid",
+    classic: "good, acceptable, or genuinely cool",
+    genz: "valid",
+    definition: "A positive approval word used when something feels authentic, sensible, or attractive.",
+    usageExample: "That outfit is valid and the color choice works well.",
+    tone: "slang",
+    synonyms: ["good", "acceptable", "cool"],
+    category: "culture"
+  },
+  {
+    term: "cap",
+    classic: "lie or exaggeration",
+    genz: "cap",
+    definition: "Used to call out something as false or overstated.",
+    usageExample: "That timeline is cap if nobody has started yet.",
+    tone: "slang",
+    synonyms: ["lie", "exaggeration", "falsehood"],
+    category: "slang"
+  },
+  {
+    term: "drip",
+    classic: "style or fashion sense",
+    genz: "drip",
+    definition: "A term for a strong fashion look or stylish presentation.",
+    usageExample: "The poster design has drip because the typography is on point.",
+    tone: "slang",
+    synonyms: ["style", "fashion", "look"],
+    category: "culture"
+  },
+  {
+    term: "ate and left no crumbs",
+    classic: "did exceptionally well",
+    genz: "ate and left no crumbs",
+    definition: "A dramatic compliment meaning something was done extremely well.",
+    usageExample: "That final slide ate and left no crumbs.",
+    tone: "slang",
+    synonyms: ["excelled", "nailed it", "impressed"],
+    category: "culture"
+  },
+  {
+    term: "old school",
+    classic: "traditional or outdated in a familiar way",
+    genz: "old school",
+    definition: "An older style or attitude that remains recognizable and sometimes respected.",
+    usageExample: "That expression is old school and still shows up with older speakers.",
+    tone: "formal",
+    synonyms: ["traditional", "classic", "dated"],
+    category: "formal"
+  },
+  {
+    term: "cheugy",
+    classic: "uncool, outdated, or trying too hard",
+    genz: "cheugy",
+    definition: "A Gen Z term for something that feels stale, overly polished, or behind the trend.",
+    usageExample: "That phrase feels cheugy in a modern chat.",
+    tone: "slang",
+    synonyms: ["outdated", "uncool", "tacky"],
+    category: "slang"
+  },
+  {
     term: "respectfully",
     classic: "politely but directly",
     genz: "respectfully",

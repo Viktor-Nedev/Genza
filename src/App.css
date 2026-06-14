@@ -81,6 +81,7 @@
     linear-gradient(to right, rgba(123, 109, 255, 0.035) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(123, 109, 255, 0.035) 1px, transparent 1px);
 }
+
 .classic .grid-backdrop {
   background-image:
     linear-gradient(to right, rgba(134, 99, 39, 0.03) 1px, transparent 1px),
@@ -102,7 +103,12 @@
 }
 
 /* ─── Typography ─── */
-h1, h2, h3, p { margin-top: 0; }
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
 
 h1 {
   margin-bottom: 0;
@@ -164,7 +170,7 @@ h3 {
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0;
   color: var(--text);
   text-align: left;
   background: transparent;
@@ -175,17 +181,28 @@ h3 {
 
 .brand-mark {
   display: grid;
-  width: 40px;
-  height: 40px;
+  width: 72px;
+  height: 72px;
   place-items: center;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent-4), var(--accent));
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel-solid) 84%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 18%, transparent);
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
 }
 
 .classic .brand-mark {
-  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  border-color: color-mix(in srgb, var(--accent-2) 32%, var(--line));
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+  padding: 6px;
 }
 
 .brand-lockup strong,
@@ -509,11 +526,17 @@ h3 {
 }
 
 .vibe-line.horizontal.top {
-  top: 90px; left: 0; right: 0; height: 1px;
+  top: 90px;
+  left: 0;
+  right: 0;
+  height: 1px;
 }
 
 .vibe-line.vertical.left {
-  top: 0; bottom: 0; left: 88px; width: 1px;
+  top: 0;
+  bottom: 0;
+  left: 88px;
+  width: 1px;
 }
 
 .vibe-crosshair {
@@ -524,8 +547,15 @@ h3 {
   opacity: 0.3;
 }
 
-.vibe-crosshair.top-left { top: 82px; left: 82px; }
-.vibe-crosshair.top-right { top: 82px; right: 88px; }
+.vibe-crosshair.top-left {
+  top: 82px;
+  left: 82px;
+}
+
+.vibe-crosshair.top-right {
+  top: 82px;
+  right: 88px;
+}
 
 .vibe-tech-info {
   display: flex;
@@ -708,7 +738,7 @@ h1.reveal-item {
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--panel-solid) 92%, transparent);
   backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   color: var(--text);
   font-size: 0.78rem;
   font-weight: 900;
@@ -729,7 +759,7 @@ h1.reveal-item {
 
 .showcase-tile {
   display: grid;
-  grid-template-rows: 210px auto;
+  grid-template-rows: 260px auto;
   position: relative;
   overflow: hidden;
   text-align: left;
@@ -752,15 +782,17 @@ h1.reveal-item {
 .showcase-tile-img {
   overflow: hidden;
   width: 100%;
-  height: 210px;
+  height: 260px;
   position: relative;
+  background: color-mix(in srgb, var(--panel-solid) 72%, transparent);
 }
 
 .showcase-tile-img img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 35%;
+  object-fit: contain;
+  object-position: center center;
+  padding: 10px;
   transition: transform 600ms ease;
 }
 
@@ -793,12 +825,25 @@ h1.reveal-item {
     var(--panel);
 }
 
+.genz-tile .showcase-tile-img {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(0, 237, 245, 0.14), transparent 58%),
+    color-mix(in srgb, #fffdf8 82%, transparent);
+}
+
 .classic-tile {
   background:
     linear-gradient(180deg, rgba(134, 99, 39, 0.09), transparent 56%),
     linear-gradient(135deg, rgba(94, 127, 103, 0.08), transparent 40%),
     var(--panel);
 }
+
+.classic-tile .showcase-tile-img {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(134, 99, 39, 0.12), transparent 58%),
+    color-mix(in srgb, #fcf6e8 84%, transparent);
+}
+
 .classic-tile {
   border-color: color-mix(in srgb, var(--accent-2) 40%, var(--line));
 }
@@ -840,6 +885,7 @@ h1.reveal-item {
     radial-gradient(circle at top right, rgba(255, 51, 176, 0.12), transparent 28%),
     radial-gradient(circle at bottom right, rgba(0, 237, 245, 0.13), transparent 30%),
     var(--panel);
+  min-height: 0;
 }
 
 .direction-tile {
@@ -962,7 +1008,7 @@ h1.reveal-item {
   height: 100%;
   object-fit: contain;
   object-position: right bottom;
-  filter: drop-shadow(0 14px 24px rgba(0,0,0,0.16));
+  filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.16));
 }
 
 /* ─── Bridge Page ─── */
@@ -1006,7 +1052,9 @@ h1.reveal-item {
   letter-spacing: 0.06em;
 }
 
-select, input, textarea {
+select,
+input,
+textarea {
   color: var(--text);
   background: color-mix(in srgb, var(--panel-solid) 90%, transparent);
   border: 1px solid var(--line);
@@ -1061,7 +1109,7 @@ select {
   transition: transform 180ms ease, background 180ms ease;
 }
 
-.explain-toggle input:checked + span::after {
+.explain-toggle input:checked+span::after {
   background: var(--accent);
   transform: translateX(18px);
 }
@@ -1107,7 +1155,8 @@ select {
   font-size: 0.86rem;
 }
 
-.editor-pane textarea, .result-box {
+.editor-pane textarea,
+.result-box {
   flex: 1;
   width: 100%;
   min-height: 250px;
@@ -1116,6 +1165,41 @@ select {
   resize: none;
   font-size: 1rem;
   line-height: 1.55;
+}
+
+.screenshot-upload {
+  display: grid;
+  gap: 6px;
+  margin-top: -2px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.screenshot-upload input {
+  width: 100%;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--panel-solid) 78%, transparent);
+}
+
+.screenshot-name,
+.screenshot-analysis {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--panel-solid) 82%, transparent);
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.screenshot-analysis {
+  color: var(--text);
 }
 
 .editor-pane textarea:focus,
@@ -1133,7 +1217,9 @@ select:focus,
   background: color-mix(in srgb, var(--panel) 76%, transparent);
 }
 
-.result-box.filled { color: var(--text); }
+.result-box.filled {
+  color: var(--text);
+}
 
 .reaction-pop {
   position: absolute;
@@ -1226,9 +1312,13 @@ select:focus,
   margin-bottom: 14px;
 }
 
-.panel-heading.compact { margin: 20px 0 12px; }
+.panel-heading.compact {
+  margin: 20px 0 12px;
+}
 
-.panel-heading h2 { margin: 0; }
+.panel-heading h2 {
+  margin: 0;
+}
 
 .explanation-list {
   display: grid;
@@ -1530,11 +1620,12 @@ select:focus,
 
 .lexicon-overlay.genz .lexicon-book {
   background:
-    linear-gradient(135deg, rgba(255, 51, 176, 0.18), transparent 38%),
-    linear-gradient(240deg, rgba(0, 237, 245, 0.18), transparent 44%),
-    #0d1120;
-  border-color: var(--accent-4);
-  color: #e8eaf0;
+    radial-gradient(circle at 15% 10%, rgba(0, 237, 245, 0.12), transparent 26%),
+    radial-gradient(circle at 85% 8%, rgba(255, 51, 176, 0.12), transparent 24%),
+    radial-gradient(circle at 50% 95%, rgba(199, 255, 54, 0.1), transparent 30%),
+    #fffef8;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: var(--text);
 }
 
 .lexicon-overlay.genz .lexicon-book h2,
@@ -1542,12 +1633,12 @@ select:focus,
 .lexicon-overlay.genz .lexicon-book p,
 .lexicon-overlay.genz .lexicon-book dt,
 .lexicon-overlay.genz .lexicon-book dd {
-  color: #e8eaf0;
+  color: var(--text);
 }
 
 .lexicon-overlay.genz .lexicon-book .vibe-badge {
-  color: var(--accent-2);
-  border-color: color-mix(in srgb, var(--accent-2) 30%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .classic .lexicon-book {
@@ -1576,7 +1667,9 @@ select:focus,
   flex: 0 0 auto;
 }
 
-.book-toolbar h2 { margin: 0; }
+.book-toolbar h2 {
+  margin: 0;
+}
 
 .book-spread {
   display: grid;
@@ -1604,12 +1697,37 @@ select:focus,
 }
 
 .lexicon-overlay.genz .book-page {
-  background: color-mix(in srgb, rgba(123, 109, 255, 0.08) 100%, #0d1120);
-  border-color: color-mix(in srgb, var(--accent-4) 30%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 255, 0.88)),
+    color-mix(in srgb, var(--panel-solid) 92%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
 }
 
-.book-right h3 { font-size: 1.8rem; margin-bottom: 8px; }
-.book-left h3 { margin-bottom: 12px; }
+.lexicon-overlay.genz .book-spine-line {
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 28%, var(--line)), transparent);
+}
+
+.lexicon-overlay.genz .lexicon-divider {
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.lexicon-overlay.genz .tone-label {
+  color: #11160f;
+  background: var(--accent-3);
+}
+
+.lexicon-overlay.genz .synonym-tag-btn {
+  background: color-mix(in srgb, var(--accent-2) 12%, var(--panel-solid));
+}
+
+.book-right h3 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+
+.book-left h3 {
+  margin-bottom: 12px;
+}
 
 .lexicon-index {
   display: grid;
@@ -1730,10 +1848,22 @@ select:focus,
   letter-spacing: 0.06em;
 }
 
-.tone-label.slang { background: var(--accent); color: #fff; }
-.tone-label.emotional { background: var(--accent-3); }
-.tone-label.formal { background: var(--accent-2); }
-.tone-label.neutral { background: #c8d4cc; }
+.tone-label.slang {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tone-label.emotional {
+  background: var(--accent-3);
+}
+
+.tone-label.formal {
+  background: var(--accent-2);
+}
+
+.tone-label.neutral {
+  background: #c8d4cc;
+}
 
 .synonym-tags {
   display: flex;
@@ -1761,7 +1891,9 @@ select:focus,
   color: #fff;
 }
 
-.classic .synonym-tag-btn:hover { color: #11160f; }
+.classic .synonym-tag-btn:hover {
+  color: #11160f;
+}
 
 .book-controls {
   display: flex;
@@ -1774,7 +1906,8 @@ select:focus,
 /* Page flipping */
 .book-page-flipping {
   position: absolute;
-  top: 0; right: 0;
+  top: 0;
+  right: 0;
   width: 58%;
   height: 100%;
   transform-origin: left center;
@@ -1824,34 +1957,71 @@ select:focus,
 
 /* ─── Keyframe Animations ─── */
 @keyframes genzBackdropAnim {
-  0%   { background-position: 0% 10%; }
-  50%  { background-position: 100% 90%; }
-  100% { background-position: 22% 100%; }
+  0% {
+    background-position: 0% 10%;
+  }
+
+  50% {
+    background-position: 100% 90%;
+  }
+
+  100% {
+    background-position: 22% 100%;
+  }
 }
 
 @keyframes classicWallpaperMove {
-  0%   { background-position: 0px 0px; }
-  100% { background-position: 160px 320px; }
+  0% {
+    background-position: 0px 0px;
+  }
+
+  100% {
+    background-position: 160px 320px;
+  }
 }
 
 @keyframes flipRightToLeft {
-  from { transform: rotateY(0deg); }
-  to   { transform: rotateY(-180deg); }
+  from {
+    transform: rotateY(0deg);
+  }
+
+  to {
+    transform: rotateY(-180deg);
+  }
 }
 
 @keyframes flipLeftToRight {
-  from { transform: rotateY(-180deg); }
-  to   { transform: rotateY(0deg); }
+  from {
+    transform: rotateY(-180deg);
+  }
+
+  to {
+    transform: rotateY(0deg);
+  }
 }
 
 @keyframes vibeDotPulse {
-  0%, 100% { transform: scale(1); opacity: 0.65; }
-  50%       { transform: scale(1.35); opacity: 1; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
 }
 
 @keyframes bridgePillFloat {
-  from { transform: translate(-50%, -50%) translateY(0); }
-  to   { transform: translate(-50%, -50%) translateY(-8px); }
+  from {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+
+  to {
+    transform: translate(-50%, -50%) translateY(-8px);
+  }
 }
 
 /* ─── Responsive ─── */
@@ -1889,7 +2059,8 @@ select:focus,
     gap: 8px;
   }
 
-  .nav-links, .nav-actions {
+  .nav-links,
+  .nav-actions {
     justify-content: flex-start;
     flex-wrap: wrap;
   }
@@ -1902,7 +2073,7 @@ select:focus,
   .hero-band,
   .mode-showcase,
   .bento-grid {
-    padding: 12px;
+    padding: 1px;
   }
 
   .mode-showcase,
@@ -1924,11 +2095,11 @@ select:focus,
   }
 
   .showcase-tile {
-    grid-template-rows: 150px auto;
+    grid-template-rows: 190px auto;
   }
 
   .showcase-tile-img {
-    height: 150px;
+    height: 190px;
   }
 
   .sticker-row {

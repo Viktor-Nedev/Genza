@@ -42,6 +42,25 @@ export async function translateMessage(text: string, mode: Mode): Promise<Transl
   return response.json();
 }
 
+export async function translateScreenshot(
+  imageDataUrl: string,
+  mode: Mode,
+  text = ""
+): Promise<TranslationResult & { extractedText?: string; screenshotSummary?: string }> {
+  const response = await fetch("/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageDataUrl, text, mode })
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.error || "Screenshot analysis failed.");
+  }
+
+  return response.json();
+}
+
 export function getClientFallback(mode: Mode, text: string): TranslationResult {
   if (!text.trim()) {
     return {

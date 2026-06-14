@@ -1,7 +1,7 @@
 import cors from "cors";
 import "dotenv/config";
 import express from "express";
-import { dictionary, fallbackTranslate, translateWithOpenAI } from "./translator.js";
+import { dictionary, fallbackTranslate, translateWithGemini } from "./translator.js";
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
@@ -21,6 +21,7 @@ app.get(["/api/dictionary", "/dictionary"], (_req, res) => {
 async function handleTranslate(req, res) {
   const text = String(req.body?.text || "");
   const mode = String(req.body?.mode || "genz_to_adult");
+  const imageDataUrl = String(req.body?.imageDataUrl || "");
 
   if (!modes.has(mode)) {
     return res.status(400).json({ error: "Unsupported translation mode." });
@@ -31,7 +32,7 @@ async function handleTranslate(req, res) {
   }
 
   try {
-    const llmResult = await translateWithOpenAI(text, mode);
+    const llmResult = await translateWithGemini(text, mode, imageDataUrl);
     if (llmResult) {
       return res.json({ ...llmResult, source: "llm" });
     }

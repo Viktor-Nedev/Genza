@@ -10,6 +10,8 @@ export type TranslationResult = {
   readability: number;
   confidence: number;
   source?: "llm" | "fallback";
+  extractedText?: string;
+  screenshotSummary?: string;
 };
 
 export type Example = {
