@@ -8,7 +8,7 @@ const port = Number(process.env.PORT || 8787);
 const modes = new Set(["genz_to_adult", "adult_to_genz"]);
 
 app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "genza-api" });

@@ -46,6 +46,92 @@ function getMatchedEntries(text: string, result: TranslationResult | null) {
   return dictionary.filter((entry) => haystack.includes(entry.term.toLowerCase())).slice(0, 6);
 }
 
+function looksLikeGibberish(text: string) {
+  const clean = text.trim();
+  if (!clean) return false;
+  const letters = (clean.match(/[a-zA-Z]/g) || []).length;
+  const punctuation = (clean.match(/[^\w\s]/g) || []).length;
+  const alphaRatio = letters / Math.max(clean.length, 1);
+  const wordCount = clean.split(/\s+/).filter(Boolean).length;
+  return wordCount <= 2 || alphaRatio < 0.55 || punctuation > letters * 0.35;
+}
+
+function deriveEmotionProfile(sourceText: string, translatedText: string, screenshotAttached: boolean) {
+  const combined = `${sourceText} ${translatedText}`.toLowerCase();
+  const emotions = new Set<string>();
+
+  const checks: Array<[RegExp, string]> = [
+    [/\b(worried|concerned|stress|stressed|anxious|panic|panic\w*)\b/i, "anxious"],
+    [/\b(sad|upset|hurt|disappointed|lonely|tired)\b/i, "sad"],
+    [/\b(angry|mad|frustrated|annoyed|fed up|irritated)\b/i, "frustrated"],
+    [/\b(happy|excited|great|good|amazing|nice|love)\b/i, "positive"],
+    [/\b(confused|unclear|lost|unsure|messy)\b/i, "confused"],
+    [/\b(calm|steady|neutral|okay|fine)\b/i, "calm"],
+    [/\b(embarrassed|awkward|shy)\b/i, "awkward"]
+  ];
+
+  for (const [pattern, emotion] of checks) {
+    if (pattern.test(combined)) emotions.add(emotion);
+  }
+
+  if (screenshotAttached && emotions.size === 0) {
+    emotions.add("observant");
+  }
+
+  const feeling =
+    emotions.has("anxious")
+      ? "Anxious"
+      : emotions.has("frustrated")
+        ? "Frustrated"
+        : emotions.has("sad")
+          ? "Sad"
+          : emotions.has("confused")
+            ? "Confused"
+            : emotions.has("positive")
+              ? "Positive"
+              : emotions.has("awkward")
+                ? "Awkward"
+                : emotions.has("calm")
+                  ? "Calm"
+                  : screenshotAttached
+                    ? "Observant"
+                    : "Neutral";
+
+  return { feeling, emotions: Array.from(emotions) };
+}
+
+async function fileToDataUrl(file: File) {
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Unable to read the selected image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressImageDataUrl(dataUrl: string, maxWidth = 1024, quality = 0.72) {
+  return await new Promise<string>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      const scale = Math.min(1, maxWidth / image.width);
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        reject(new Error("Unable to prepare the screenshot for analysis."));
+        return;
+      }
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    image.onerror = () => reject(new Error("Unable to read the selected image."));
+    image.src = dataUrl;
+  });
+}
+
 /* ── Navbar icon-only button for the Lexicon ── */
 function LexiconIconButton({ onClick }: { onClick: () => void }) {
   return (
@@ -285,7 +371,9 @@ function BridgePage({
   onOpenLexicon,
   screenshotName,
   analysisText,
-  onScreenshotUpload
+  onScreenshotUpload,
+  analysisEmotions,
+  analysisFeeling
 }: {
   mode: Mode;
   setMode: (mode: Mode) => void;
@@ -307,6 +395,8 @@ function BridgePage({
   screenshotName: string;
   analysisText: string;
   onScreenshotUpload: (file: File | null) => void;
+  analysisEmotions: string[];
+  analysisFeeling: string;
 }) {
   return (
     <section className="bridge-page">
@@ -348,14 +438,22 @@ function BridgePage({
             maxLength={1200}
             placeholder="Write a message…"
           />
-          <label className="screenshot-upload">
-            <span>Upload screenshot</span>
+          <div className="screenshot-upload">
+            <label htmlFor="screenshot-upload-input">Upload screenshot</label>
+          <div className="screenshot-upload-row">
             <input
+              id="screenshot-upload-input"
+              className="screenshot-upload-input"
               type="file"
               accept="image/*"
               onChange={(event) => onScreenshotUpload(event.target.files?.[0] || null)}
             />
-          </label>
+            <span className={screenshotName ? "screenshot-upload-copy ready" : "screenshot-upload-copy"}>
+              {screenshotName ? "Screenshot ready" : "PNG, JPG, or WEBP"}
+            </span>
+          </div>
+          <div className="screenshot-hint">The screenshot should show a chat conversation for best results.</div>
+        </div>
           {screenshotName ? <div className="screenshot-name">{screenshotName}</div> : null}
           <div className="pane-foot">
             <span>{text.length}/1200</span>
@@ -379,7 +477,6 @@ function BridgePage({
           <div className={`result-box ${result ? "filled" : ""}`}>
             {result?.translated || "Your translated message will appear here."}
           </div>
-          {analysisText ? <div className="screenshot-analysis">{analysisText}</div> : null}
           {result ? <div className="reaction-pop">Translation ready</div> : null}
           <div className="metric-row" aria-label="Translation metrics">
             <span>Tone: {result?.tone || "waiting"}</span>
@@ -389,7 +486,44 @@ function BridgePage({
         </section>
       </div>
 
-      {error ? <p className="error-line">{error} Local fallback is showing.</p> : null}
+      <section className="text-analysis-panel" aria-label="Text analysis">
+        <div className="panel-heading">
+          <Sparkles size={18} />
+          <h2>Text Analysis</h2>
+        </div>
+        <div className="text-analysis-hero">
+          <div>
+            <span className="analysis-label">Input summary</span>
+            <p>{analysisText || "Drop in a screenshot or enter text to generate an analysis summary here."}</p>
+          </div>
+        </div>
+        <div className="analysis-feeling-row">
+          <div className="analysis-feeling-card">
+            <span>Feeling</span>
+            <strong>{analysisFeeling || "No analysis yet"}</strong>
+          </div>
+          <div className="analysis-emotion-card">
+            <span>Emotions</span>
+            <div className="analysis-emotion-chips">
+              {(analysisEmotions.length ? analysisEmotions : []).length ? (
+                (analysisEmotions.length ? analysisEmotions : []).map((emotion) => <span key={emotion}>{emotion}</span>)
+              ) : (
+                <span>No emotions detected yet</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="text-analysis-notes">
+          <div className="analysis-note">
+            <span>Focus</span>
+            <p>{result?.translated || (screenshotName ? "On the screenshot, it shows a chat conversation being analyzed." : "Awaiting a message to analyze.")}</p>
+          </div>
+          <div className="analysis-note">
+            <span>Signal</span>
+            <p>{result?.screenshotSummary || result?.explanation?.[0] || "The model will explain tone, wording, and context shifts."}</p>
+          </div>
+        </div>
+      </section>
 
       {matchedEntries.length ? (
         <div className="slang-row" aria-label="Matched lexicon terms">
@@ -615,7 +749,9 @@ function App() {
   const [screenshotName, setScreenshotName] = useState("");
   const [result, setResult] = useState<TranslationResult | null>(null);
   const [analysisText, setAnalysisText] = useState("");
+  const [analysisEmotions, setAnalysisEmotions] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const [showError, setShowError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showExplain, setShowExplain] = useState(true);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -633,6 +769,10 @@ function App() {
   const activeExamples = useMemo(() => examples.filter((example) => example.mode === mode), [mode]);
   const matchedEntries = useMemo(() => getMatchedEntries(text, result), [text, result]);
   const activeEntry = dictionary[bookPage] || dictionary[0];
+  const emotionProfile = useMemo(
+    () => deriveEmotionProfile(text, result?.translated || analysisText, Boolean(screenshotDataUrl)),
+    [text, result?.translated, analysisText, screenshotDataUrl]
+  );
 
   // Smooth scroll via Lenis
   useEffect(() => {
@@ -683,20 +823,39 @@ function App() {
 
   async function handleTranslate() {
     setError("");
+    setShowError(false);
     setCopied(false);
     setIsTranslating(true);
     try {
+      if (!screenshotDataUrl && looksLikeGibberish(text)) {
+        setResult(null);
+        setAnalysisText("");
+        setAnalysisEmotions([]);
+        setError("That input does not look like a meaningful message. Please enter it again in English.");
+        setShowError(true);
+        return;
+      }
       const nextResult = screenshotDataUrl
         ? await translateScreenshot(screenshotDataUrl, mode, text)
         : await translateMessage(text, mode);
+      if (nextResult.isValidInput === false) {
+        setAnalysisText("");
+        setAnalysisEmotions([]);
+        setError(nextResult.validationMessage || "Invalid input. Please upload a chat screenshot or enter a meaningful message.");
+        setShowError(true);
+        return;
+      }
       const extra = [nextResult.extractedText, nextResult.screenshotSummary].filter(Boolean).join(" ").trim();
       setAnalysisText(extra);
+      setAnalysisEmotions(nextResult.emotions || emotionProfile.emotions);
       startTransition(() => setResult(nextResult));
     } catch (translationError) {
       const fallback = getClientFallback(mode, text);
       startTransition(() => setResult(fallback));
       setAnalysisText("");
+      setAnalysisEmotions(emotionProfile.emotions);
       setError(translationError instanceof Error ? translationError.message : "Translation failed.");
+      setShowError(true);
     } finally {
       setIsTranslating(false);
     }
@@ -707,9 +866,11 @@ function App() {
     setMode(example.mode);
     setResult(null);
     setAnalysisText("");
+    setAnalysisEmotions([]);
     setScreenshotDataUrl("");
     setScreenshotName("");
     setError("");
+    setShowError(false);
   }
 
   function handleScreenshotUpload(file: File | null) {
@@ -719,13 +880,20 @@ function App() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setScreenshotDataUrl(String(reader.result || ""));
-      setScreenshotName(file.name);
-      setError("");
-    };
-    reader.readAsDataURL(file);
+    fileToDataUrl(file)
+      .then((dataUrl) => compressImageDataUrl(dataUrl))
+      .then((compressed) => {
+        setScreenshotDataUrl(compressed);
+        setScreenshotName(file.name);
+        setError("");
+        setShowError(false);
+      })
+      .catch((uploadError) => {
+        setScreenshotDataUrl("");
+        setScreenshotName("");
+        setError(uploadError instanceof Error ? uploadError.message : "Unable to read the selected image.");
+        setShowError(true);
+      });
   }
 
   async function copyOutput() {
@@ -806,6 +974,8 @@ function App() {
             screenshotName={screenshotName}
             analysisText={analysisText}
             onScreenshotUpload={handleScreenshotUpload}
+            analysisEmotions={analysisEmotions}
+            analysisFeeling={emotionProfile.feeling}
           />
         ) : null}
 
@@ -822,6 +992,30 @@ function App() {
         onNext={() => selectBookPage(bookPage + 1)}
         onSelect={selectBookPage}
       />
+
+      {error && showError ? (
+        <div className="error-overlay" role="alert" aria-live="assertive">
+          <div className="error-overlay-card">
+            <div className="error-overlay-head">
+              <span>Analysis error</span>
+              <button type="button" className="error-close-btn" aria-label="Close error message" onClick={() => setShowError(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <p>{error}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {isTranslating ? (
+        <div className="analysis-loader" aria-live="polite" aria-busy="true">
+          <div className="analysis-loader-card">
+            <div className="analysis-spinner" />
+            <strong>Analyzing input</strong>
+            <span>{screenshotName ? "Reading the screenshot and extracting chat context..." : "Reading the text and detecting tone..."}</span>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

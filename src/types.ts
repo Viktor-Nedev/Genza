@@ -12,6 +12,11 @@ export type TranslationResult = {
   source?: "llm" | "fallback";
   extractedText?: string;
   screenshotSummary?: string;
+  emotions?: string[];
+  feeling?: string;
+  inputType?: string;
+  isValidInput?: boolean;
+  validationMessage?: string;
 };
 
 export type Example = {

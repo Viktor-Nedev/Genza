@@ -267,6 +267,17 @@ function scoreReadability(text, mode) {
   return Number(Math.max(0.58, base - penalty).toFixed(2));
 }
 
+function looksLikeGibberish(text) {
+  const clean = normalizeWhitespace(text);
+  if (!clean) return false;
+  const letters = (clean.match(/[a-zA-Z]/g) || []).length;
+  const spaces = (clean.match(/\s/g) || []).length;
+  const punctuation = (clean.match(/[^\w\s]/g) || []).length;
+  const alphaRatio = letters / Math.max(clean.length, 1);
+  const wordCount = clean.split(/\s+/).filter(Boolean).length;
+  return wordCount <= 2 || alphaRatio < 0.55 || punctuation > letters * 0.35;
+}
+
 function fallbackTranslate(text, mode) {
   const cleanText = normalizeWhitespace(text);
   if (!cleanText) {
@@ -276,6 +287,23 @@ function fallbackTranslate(text, mode) {
       tone: "neutral",
       readability: 0,
       confidence: 0
+    };
+  }
+
+  if (looksLikeGibberish(cleanText)) {
+    return {
+      translated: "",
+      explanation: [],
+      tone: "neutral",
+      readability: 0,
+      confidence: 0,
+      extractedText: "",
+      screenshotSummary: "",
+      emotions: [],
+      feeling: "",
+      inputType: "invalid",
+      isValidInput: false,
+      validationMessage: "That input does not look like a meaningful message. Please enter it again in English."
     };
   }
 
@@ -385,11 +413,11 @@ function buildPrompt(text, mode) {
   return [
     {
       role: "system",
-      content: "You power Genza, an intergenerational language bridge. Preserve meaning. Do not add facts. Transform tone, decode slang or formal phrasing, simplify readability, normalize emotional intensity, and explain cultural/context changes. Return strict JSON with translated, explanation, tone, readability, confidence, extractedText, and screenshotSummary."
+      content: "You power Genza, an intergenerational language bridge. Preserve meaning. Do not add facts. Transform tone, decode slang or formal phrasing, simplify readability, normalize emotional intensity, and explain cultural/context changes. If the input is a screenshot, first inspect whether it is actually a chat screenshot. If it is not a chat screenshot, mark isValidInput false and explain briefly. If the text is gibberish or unrelated characters, mark isValidInput false and explain briefly. Return strict JSON with translated, explanation, tone, readability, confidence, extractedText, screenshotSummary, emotions, feeling, inputType, isValidInput, validationMessage."
     },
     {
       role: "user",
-      content: `Rewrite this message into ${target}. Explain the most important changes in 2-4 short bullets. If an image is included, OCR it first and use the screenshot text as context. Message: ${text}`
+      content: `Rewrite this message into ${target}. Explain the most important changes in 2-4 short bullets. If an image is included, OCR it first and use the screenshot text as context. For screenshots, start the visual description with "On the screenshot, it shows...". For text, describe the mood and emotions expressed. Message: ${text}`
     }
   ];
 }
@@ -456,6 +484,7 @@ async function translateWithGemini(text, mode, imageDataUrl = "") {
   }
 
   const parsed = parseJsonResponse(raw);
+  const isValidInput = parsed.isValidInput !== false;
   return {
     translated: String(parsed.translated || ""),
     explanation: Array.isArray(parsed.explanation) ? parsed.explanation.slice(0, 4).map(String) : [],
@@ -463,7 +492,12 @@ async function translateWithGemini(text, mode, imageDataUrl = "") {
     readability: Number(parsed.readability || scoreReadability(parsed.translated || text, mode)),
     confidence: Number(parsed.confidence || 0.9),
     extractedText: String(parsed.extractedText || ""),
-    screenshotSummary: String(parsed.screenshotSummary || "")
+    screenshotSummary: String(parsed.screenshotSummary || ""),
+    emotions: Array.isArray(parsed.emotions) ? parsed.emotions.slice(0, 5).map(String) : [],
+    feeling: String(parsed.feeling || ""),
+    inputType: String(parsed.inputType || (imageDataUrl ? "screenshot" : "text")),
+    isValidInput,
+    validationMessage: String(parsed.validationMessage || "")
   };
 }
 

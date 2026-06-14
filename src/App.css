@@ -1169,8 +1169,12 @@ select {
 
 .screenshot-upload {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   margin-top: -2px;
+  color: var(--muted);
+}
+
+.screenshot-upload label {
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 900;
@@ -1178,16 +1182,60 @@ select {
   letter-spacing: 0.06em;
 }
 
-.screenshot-upload input {
-  width: 100%;
-  padding: 10px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--panel-solid) 78%, transparent);
+.screenshot-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.screenshot-upload-input {
+  width: min(220px, 100%);
+  padding: 0;
+  color: var(--text);
+  font: inherit;
+  border: 0;
+  background: transparent;
+}
+
+.screenshot-upload-input::file-selector-button {
+  margin-right: 10px;
+  padding: 0 14px;
+  min-height: 40px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border-radius: 999px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-4) 18%, var(--panel-solid)), color-mix(in srgb, var(--accent) 16%, var(--panel-solid)));
+  color: var(--text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.classic .screenshot-upload-input::file-selector-button {
+  border-color: color-mix(in srgb, var(--accent-2) 34%, var(--line));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-2) 18%, var(--panel-solid)), color-mix(in srgb, var(--accent) 12%, var(--panel-solid)));
+}
+
+.screenshot-upload-copy {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.screenshot-upload-copy.ready {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.screenshot-hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .screenshot-name,
-.screenshot-analysis {
+.screenshot-analysis,
+.text-analysis-panel {
   margin-top: 8px;
   padding: 10px 12px;
   border: 1px solid var(--line);
@@ -1200,6 +1248,237 @@ select {
 
 .screenshot-analysis {
   color: var(--text);
+}
+
+.text-analysis-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 2px;
+  padding: 20px;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 51, 176, 0.08), transparent 30%),
+    radial-gradient(circle at left center, rgba(0, 237, 245, 0.08), transparent 24%),
+    color-mix(in srgb, var(--panel-solid) 88%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.text-analysis-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.6fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.analysis-label {
+  display: inline-flex;
+  margin-bottom: 10px;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--panel-solid) 92%, transparent);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.text-analysis-hero p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.analysis-feeling-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.42fr) minmax(0, 0.58fr);
+  gap: 10px;
+}
+.analysis-feeling-card,
+.analysis-emotion-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-solid) 92%, transparent), color-mix(in srgb, var(--panel-solid) 80%, transparent));
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.analysis-feeling-card span,
+.analysis-emotion-card span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.analysis-feeling-card strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.analysis-emotion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analysis-emotion-chips span {
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 999px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel-solid) 88%, transparent);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.analysis-note {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--panel-solid) 76%, transparent);
+}
+
+.analysis-note span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.error-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(6, 8, 16, 0.34);
+  backdrop-filter: blur(10px);
+  animation: errorOverlayFade 220ms ease-out;
+}
+
+.error-overlay-card {
+  display: grid;
+  gap: 8px;
+  max-width: min(520px, calc(100vw - 40px));
+  padding: 18px 20px;
+  border: 1px solid color-mix(in srgb, #ff5b73 42%, var(--line));
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--panel-solid) 96%, transparent), color-mix(in srgb, var(--panel-solid) 88%, transparent));
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.28);
+  transform-origin: center;
+  animation: errorOverlayPop 240ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.error-overlay-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.error-overlay-card span {
+  color: #ff5b73;
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.error-close-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--panel-solid) 88%, transparent);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+
+.error-close-btn:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, #ff5b73 38%, var(--line));
+  background: color-mix(in srgb, #ff5b73 10%, var(--panel-solid));
+}
+
+.error-overlay-card p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.analysis-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(6, 8, 16, 0.22);
+  backdrop-filter: blur(8px);
+  animation: errorOverlayFade 180ms ease-out;
+}
+
+.analysis-loader-card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-width: min(320px, calc(100vw - 40px));
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  animation: errorOverlayPop 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  text-align: center;
+}
+
+.analysis-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: analysisSpin 800ms linear infinite;
+}
+
+.analysis-loader-card strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.analysis-loader-card span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.text-analysis-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.analysis-note p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.5;
 }
 
 .editor-pane textarea:focus,
@@ -1734,6 +2013,24 @@ select:focus,
   gap: 6px;
   flex: 1;
   min-height: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 45%, var(--line)) transparent;
+}
+
+.lexicon-index::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lexicon-index::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lexicon-index::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 
 .lexicon-index button {
@@ -2022,6 +2319,21 @@ select:focus,
   to {
     transform: translate(-50%, -50%) translateY(-8px);
   }
+}
+
+@keyframes errorOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes errorOverlayPop {
+  from { opacity: 0; transform: translateY(14px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes analysisSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* ─── Responsive ─── */
