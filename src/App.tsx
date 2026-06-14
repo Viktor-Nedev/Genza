@@ -11,19 +11,13 @@ import {
   Clipboard,
   Copy,
   Home,
-  KeyRound,
   Layers,
   Library,
-  Lock,
-  LogIn,
-  Mail,
   MessageSquareText,
   PenLine,
   RefreshCcw,
   ShieldCheck,
   Sparkles,
-  User,
-  UserPlus,
   Wand2,
   X
 } from "lucide-react";
@@ -99,23 +93,29 @@ function HomePage({
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo(".hero-copy h1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1, ease: "power4.out" });
-      gsap.fromTo(".hero-copy .hero-text", { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.9, delay: 0.22, ease: "power4.out" });
-      gsap.fromTo(".hero-actions .btn", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.7, delay: 0.44, stagger: 0.14, ease: "power3.out" });
-      gsap.fromTo(".hero-photos", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 1.1, delay: 0.3, ease: "power3.out" });
+      gsap.fromTo(
+        ".hero-copy > *",
+        { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: 0.78, stagger: 0.1, ease: "power3.out" }
+      );
+      gsap.fromTo(".hero-photos", { opacity: 0, x: 36, scale: 0.98 }, { opacity: 1, x: 0, scale: 1, duration: 1.05, ease: "power3.out" });
+      gsap.fromTo(".hero-actions .btn", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.62, delay: 0.18, stagger: 0.12, ease: "power3.out" });
 
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              gsap.fromTo(entry.target, { opacity: 0, y: 38, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.75, ease: "power3.out" });
-              observer.unobserve(entry.target);
-            }
+            gsap.to(entry.target, {
+              opacity: entry.isIntersecting ? 1 : 0,
+              y: entry.isIntersecting ? 0 : 24,
+              scale: entry.isIntersecting ? 1 : 0.985,
+              duration: 0.5,
+              ease: "power2.out"
+            });
           });
         },
-        { threshold: 0.07 }
+        { threshold: 0.16, rootMargin: "0px 0px -8% 0px" }
       );
-      document.querySelectorAll(".bento-tile, .showcase-tile, .mode-showcase").forEach((el) => observer.observe(el));
+      document.querySelectorAll(".reveal-item, .hero-copy > *, .hero-photos, .mode-showcase, .showcase-tile, .bento-tile, .sticker").forEach((el) => observer.observe(el));
       return () => observer.disconnect();
     }, heroRef);
 
@@ -133,22 +133,15 @@ function HomePage({
       </div>
 
       {/* Status badges */}
-      <div className="vibe-tech-info" aria-hidden="true">
-        <span className="vibe-dot pulsing" />
-        <span className="vibe-badge">NEXUS: ACTIVE</span>
-        <span className="vibe-badge">LATENCY: 14MS</span>
-        <span className="vibe-badge">GSAP: RENDERING</span>
-      </div>
-
       {/* Hero Section */}
       <div className="hero-band">
         <div className="hero-copy">
-          <p className="section-kicker">Genza Intergenerational Bridge</p>
-          <h1>Connecting Generations Through Language.</h1>
-          <p className="hero-text">
+          <p className="section-kicker reveal-item">Genza Intergenerational Bridge</p>
+          <h1 className="reveal-item">Connecting Generations Through Language.</h1>
+          <p className="hero-text reveal-item">
             Genza translates slang, tone, and cultural context between Gen Z and adults. The engine explains every change so both sides can learn each other's language.
           </p>
-          <div className="hero-actions">
+          <div className="hero-actions reveal-item">
             <button className="btn btn-primary" type="button" onClick={onStart}>
               <Wand2 size={18} />
               Open Language Bridge
@@ -161,22 +154,22 @@ function HomePage({
         </div>
 
         {/* Real photos section */}
-        <div className="hero-photos" aria-label="Generation bridge preview">
+        <div className="hero-photos reveal-item" aria-label="Generation bridge preview">
           {optionalSplineScene ? (
             <Suspense fallback={<div className="spline-fallback">Loading…</div>}>
               <Spline scene={optionalSplineScene} className="spline-scene" />
             </Suspense>
           ) : (
             <div className="photo-collage">
-              <div className="photo-card photo-card--main">
+              <div className="photo-card photo-card--main reveal-item">
                 <img src="/Generation-Z.jpg" alt="Generation Z group" loading="lazy" />
                 <div className="photo-badge">Gen Z</div>
               </div>
-              <div className="photo-card photo-card--secondary">
+              <div className="photo-card photo-card--secondary reveal-item">
                 <img src="/old_people.jpg" alt="Classic generation adults" loading="lazy" />
                 <div className="photo-badge classic-badge">Classic</div>
               </div>
-              <div className="photo-card photo-card--accent">
+              <div className="photo-card photo-card--accent reveal-item">
                 <img src="/old_people_with_a_kid.webp" alt="Generations together" loading="lazy" />
               </div>
               <div className="bridge-pill">
@@ -189,9 +182,9 @@ function HomePage({
       </div>
 
       {/* Mode Switch Cards */}
-      <div className="mode-showcase">
+      <div className="mode-showcase reveal-item">
         <button
-          className={visualMode === "genz" ? "showcase-tile active" : "showcase-tile"}
+          className={visualMode === "genz" ? "showcase-tile active genz-tile" : "showcase-tile genz-tile"}
           type="button"
           onClick={() => onSwitchVisual("genz")}
         >
@@ -210,7 +203,7 @@ function HomePage({
           onClick={() => onSwitchVisual("classic")}
         >
           <div className="showcase-tile-img">
-            <img src="/old_people2.avif" alt="Classic style" loading="lazy" />
+            <img src="/old_people.jpg" alt="Classic style" loading="lazy" />
           </div>
           <div className="showcase-tile-info">
             <Library size={19} />
@@ -222,7 +215,7 @@ function HomePage({
 
       {/* Bento Cards */}
       <section className="bento-grid" aria-label="Genza product overview">
-        <article className="bento-tile large">
+        <article className="bento-tile large reveal-item deep-translation-tile">
           <Brain size={22} />
           <h2>Deep Translation System</h2>
           <p>The engine uses LLM prompt engineering, sentiment scoring, and context adaptation. Rather than simple word swapping, it shifts entire tones and registers.</p>
@@ -230,18 +223,27 @@ function HomePage({
           <div className="bento-img-bg">
             <img src="/genz_swang_sticker.png" alt="" aria-hidden="true" loading="lazy" />
           </div>
+          <div className="section-sticker-strip" aria-hidden="true">
+            <img src="/old_people_sticker.png" alt="" className="section-sticker section-sticker--soft" loading="lazy" />
+          </div>
         </article>
-        <article className="bento-tile">
+        <article className="bento-tile reveal-item direction-tile">
           <ArrowRightLeft size={20} />
           <h2>Dual Direction Engine</h2>
           <p>Translate Gen Z slang to classic adult tone, or turn formal language into casual slang.</p>
+          <div className="section-sticker-strip" aria-hidden="true">
+            <img src="/kid.webp" alt="" className="section-sticker section-sticker--small" loading="lazy" />
+          </div>
         </article>
-        <article className="bento-tile">
+        <article className="bento-tile reveal-item lexicon-tile">
           <BookOpen size={20} />
           <h2>Interactive Lexicon</h2>
           <p>A 3D dictionary with animated page turns, definitions, tone labels, and synonym navigation.</p>
+          <div className="section-sticker-strip" aria-hidden="true">
+            <img src="/old_people_sticker2.png" alt="" className="section-sticker section-sticker--tall" loading="lazy" />
+          </div>
         </article>
-        <article className="bento-tile wide">
+        <article className="bento-tile wide reveal-item architecture-tile">
           <Layers size={20} />
           <h2>Genza Architecture</h2>
           <ul>
@@ -249,27 +251,27 @@ function HomePage({
               <li key={item}>{item}</li>
             ))}
           </ul>
+          <div className="section-sticker-strip" aria-hidden="true">
+            <img src="/old_people_with_a_kid.webp" alt="" className="section-sticker section-sticker--wide" loading="lazy" />
+          </div>
         </article>
-        <article className="bento-tile">
+        <article className="bento-tile reveal-item pitch-tile">
           <ShieldCheck size={20} />
           <h2>Hackathon Pitch Focus</h2>
           <p>{pitchPoints[0]} Solution: Genza offers social bridges across age demographics.</p>
+          <div className="section-sticker-strip" aria-hidden="true">
+            <img src="/old_people.jpg" alt="" className="section-sticker section-sticker--soft" loading="lazy" />
+          </div>
         </article>
-        <article className="bento-tile">
+        <article className="bento-tile reveal-item stack-tile">
           <PenLine size={20} />
           <h2>Advanced Visual Stack</h2>
           <p>Integrated with GSAP, Anime.js, Lenis, and Barba.js with VibeUI interactive blueprints.</p>
+          <div className="section-sticker-strip" aria-hidden="true">
+            <img src="/genz_swang_sticker.png" alt="" className="section-sticker section-sticker--small" loading="lazy" />
+          </div>
         </article>
       </section>
-
-      {/* People sticker row */}
-      <div className="sticker-row" aria-hidden="true">
-        <img src="/old_people_sticker.png" alt="" className="sticker sticker-old" loading="lazy" />
-        <div className="sticker-divider" />
-        <img src="/kid.webp" alt="" className="sticker sticker-kid" loading="lazy" />
-        <div className="sticker-divider" />
-        <img src="/old_people_sticker2.png" alt="" className="sticker sticker-old2" loading="lazy" />
-      </div>
     </section>
   );
 }
@@ -428,148 +430,6 @@ function BridgePage({
           ))}
         </div>
       </section>
-    </section>
-  );
-}
-
-/* ── AuthPage ── */
-function AuthPage({
-  authMode,
-  setAuthMode,
-  onLoginSuccess
-}: {
-  authMode: "login" | "register";
-  setAuthMode: (mode: "login" | "register") => void;
-  onLoginSuccess: (user: { name: string; email: string; role: string }) => void;
-}) {
-  const isRegister = authMode === "register";
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("student");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
-
-    if (!email || !password || (isRegister && !name)) {
-      setErrorMsg("Please fill in all required fields.");
-      return;
-    }
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters.");
-      return;
-    }
-
-    if (isRegister) {
-      const existingUsers = JSON.parse(localStorage.getItem("genza-users") || "[]");
-      if (existingUsers.some((u: any) => u.email === email)) {
-        setErrorMsg("A user with this email already exists.");
-        return;
-      }
-      const newUser = { name, email, password, role };
-      existingUsers.push(newUser);
-      localStorage.setItem("genza-users", JSON.stringify(existingUsers));
-      localStorage.setItem("genza-current-user", JSON.stringify(newUser));
-      setSuccessMsg("Account created! Redirecting…");
-      setTimeout(() => onLoginSuccess(newUser), 1200);
-    } else {
-      if (email === "demo@genza.app" && password === "password123") {
-        const demoUser = { name: "Demo User", email, role: "mentor" };
-        localStorage.setItem("genza-current-user", JSON.stringify(demoUser));
-        setSuccessMsg("Success! Accessing language bridge…");
-        setTimeout(() => onLoginSuccess(demoUser), 1200);
-        return;
-      }
-      const existingUsers = JSON.parse(localStorage.getItem("genza-users") || "[]");
-      const user = existingUsers.find((u: any) => u.email === email && u.password === password);
-      if (!user) {
-        setErrorMsg("Invalid credentials. Try: demo@genza.app / password123");
-        return;
-      }
-      localStorage.setItem("genza-current-user", JSON.stringify(user));
-      setSuccessMsg("Welcome back! Loading session…");
-      setTimeout(() => onLoginSuccess(user), 1200);
-    }
-  };
-
-  return (
-    <section className="auth-page">
-      <div className="auth-copy">
-        <div className="auth-copy-img">
-          <img src="/old_people_with_a_kid.webp" alt="Generations together" loading="lazy" />
-        </div>
-        <p className="section-kicker">Genza workspace</p>
-        <h1>{isRegister ? "Join the Genza workspace." : "Log in to your translator workspace."}</h1>
-        <p>Gain access to advanced intergenerational translations, slang settings, and demo-ready dialogues.</p>
-        <div className="auth-preview">
-          <span>Custom slang parameters</span>
-          <span>Dictionary contributions</span>
-          <span>14ms AI response</span>
-        </div>
-      </div>
-
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
-          <button className={!isRegister ? "active" : ""} type="button" onClick={() => setAuthMode("login")}>
-            <LogIn size={16} />
-            Login
-          </button>
-          <button className={isRegister ? "active" : ""} type="button" onClick={() => setAuthMode("register")}>
-            <UserPlus size={16} />
-            Register
-          </button>
-        </div>
-
-        {errorMsg ? <div className="error-line">{errorMsg}</div> : null}
-        {successMsg ? <div className="success-line">{successMsg}</div> : null}
-
-        {isRegister ? (
-          <label className="field">
-            <span>Name</span>
-            <div>
-              <User size={16} />
-              <input placeholder="Alex Rivera" type="text" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-          </label>
-        ) : null}
-
-        <label className="field">
-          <span>Email Address</span>
-          <div>
-            <Mail size={16} />
-            <input placeholder="you@genza.app" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-        </label>
-
-        <label className="field">
-          <span>Password</span>
-          <div>
-            <Lock size={16} />
-            <input placeholder="Minimum 6 characters" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-        </label>
-
-        {isRegister ? (
-          <label className="field">
-            <span>My Generation Role</span>
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="student">Student (Gen Z)</option>
-              <option value="teacher">Teacher (Boomer/Millennial)</option>
-              <option value="parent">Parent</option>
-              <option value="mentor">Hackathon Mentor</option>
-            </select>
-          </label>
-        ) : null}
-
-        <button className="btn btn-primary btn-full" type="submit">
-          <KeyRound size={17} />
-          {isRegister ? "Register profile" : "Log in"}
-        </button>
-      </form>
     </section>
   );
 }
@@ -755,8 +615,6 @@ function App() {
   const [isPending, startTransition] = useTransition();
   const [lexiconOpen, setLexiconOpen] = useState(false);
   const [bookPage, setBookPage] = useState(0);
-  const [authMode, setAuthMode] = useState<"login" | "register">("register");
-  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const pageRef = useRef<HTMLDivElement | null>(null);
   const bridgeFlashRef = useRef<HTMLDivElement | null>(null);
 
@@ -768,14 +626,6 @@ function App() {
   const activeExamples = useMemo(() => examples.filter((example) => example.mode === mode), [mode]);
   const matchedEntries = useMemo(() => getMatchedEntries(text, result), [text, result]);
   const activeEntry = dictionary[bookPage] || dictionary[0];
-
-  // Restore session
-  useEffect(() => {
-    const saved = localStorage.getItem("genza-current-user");
-    if (saved) {
-      try { setCurrentUser(JSON.parse(saved)); } catch { /* ignore */ }
-    }
-  }, []);
 
   // Smooth scroll via Lenis
   useEffect(() => {
@@ -858,17 +708,6 @@ function App() {
     setBookPage((index + dictionary.length) % dictionary.length);
   }
 
-  const handleLoginSuccess = (user: { name: string; email: string; role: string }) => {
-    setCurrentUser(user);
-    setPage("bridge");
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("genza-current-user");
-    setCurrentUser(null);
-    setPage("home");
-  };
-
   // Suppress unused var warning for barbaLabel
   void barbaLabel;
 
@@ -909,25 +748,6 @@ function App() {
             </button>
           </div>
 
-          {currentUser ? (
-            <div className="user-profile-chip">
-              <div className="avatar-circle" title={`${currentUser.name} (${currentUser.role})`}>
-                {currentUser.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
-              </div>
-              <div className="user-meta-info">
-                <strong>{currentUser.name}</strong>
-                <small>{currentUser.role}</small>
-              </div>
-              <button className="logout-btn" type="button" onClick={handleLogout} title="Log out">
-                <X size={14} />
-              </button>
-            </div>
-          ) : (
-            <button className="btn btn-ghost btn-sm" type="button" onClick={() => setPage("auth")}>
-              <LogIn size={16} />
-              Login
-            </button>
-          )}
         </div>
       </nav>
 
@@ -959,9 +779,6 @@ function App() {
           />
         ) : null}
 
-        {page === "auth" ? (
-          <AuthPage authMode={authMode} setAuthMode={setAuthMode} onLoginSuccess={handleLoginSuccess} />
-        ) : null}
       </div>
 
       {/* Lexicon book overlay */}
