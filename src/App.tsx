@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Clipboard,
   Copy,
-  FileText,
   Home,
   KeyRound,
   Layers,
@@ -29,10 +28,8 @@ import {
   X
 } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import * as THREE from "three";
 import { getClientFallback, translateMessage } from "./api";
 import { architecture, dictionary, examples, pitchPoints } from "./data";
-import { masterPrompt } from "./masterPrompt";
 import type { DictionaryEntry, Example, Mode, Page, TranslationResult, VisualMode } from "./types";
 import "./App.css";
 
@@ -41,7 +38,7 @@ const optionalSplineScene = import.meta.env.VITE_SPLINE_SCENE?.trim() || "";
 const Spline = lazy(() => import("@splinetool/react-spline"));
 
 function modeLabel(mode: Mode) {
-  return mode === "genz_to_adult" ? "Gen Z to Classic" : "Classic to Gen Z";
+  return mode === "genz_to_adult" ? "Gen Z → Classic" : "Classic → Gen Z";
 }
 
 function targetLabel(mode: Mode) {
@@ -53,163 +50,22 @@ function getMatchedEntries(text: string, result: TranslationResult | null) {
   return dictionary.filter((entry) => haystack.includes(entry.term.toLowerCase())).slice(0, 6);
 }
 
-function ThreeSignalField({ visualMode }: { visualMode: VisualMode }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  useEffect(() => {
-    const canvasElement = canvasRef.current;
-    if (!canvasElement) {
-      return;
-    }
-    const canvas = canvasElement;
-
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 100);
-    camera.position.z = 16;
-
-    // Constellation setup
-    const pointsCount = visualMode === "genz" ? 65 : 45;
-    const particlePositions: THREE.Vector3[] = [];
-    const velocities: THREE.Vector3[] = [];
-
-    for (let i = 0; i < pointsCount; i++) {
-      const x = (Math.random() - 0.5) * 16;
-      const y = (Math.random() - 0.5) * 10;
-      const z = (Math.random() - 0.5) * 16;
-      particlePositions.push(new THREE.Vector3(x, y, z));
-      velocities.push(new THREE.Vector3(
-        (Math.random() - 0.5) * 0.015,
-        (Math.random() - 0.5) * 0.015,
-        (Math.random() - 0.5) * 0.015
-      ));
-    }
-
-    const geometry = new THREE.BufferGeometry();
-    const positionsArray = new Float32Array(pointsCount * 3);
-    
-    const updatePositions = () => {
-      for (let i = 0; i < pointsCount; i++) {
-        positionsArray[i * 3] = particlePositions[i].x;
-        positionsArray[i * 3 + 1] = particlePositions[i].y;
-        positionsArray[i * 3 + 2] = particlePositions[i].z;
-      }
-      geometry.setAttribute("position", new THREE.BufferAttribute(positionsArray, 3));
-      geometry.attributes.position.needsUpdate = true;
-    };
-    updatePositions();
-
-    const material = new THREE.PointsMaterial({
-      color: visualMode === "genz" ? 0x00edf5 : 0xcaa654,
-      size: visualMode === "genz" ? 0.22 : 0.16,
-      transparent: true,
-      opacity: visualMode === "genz" ? 0.9 : 0.7
-    });
-
-    const points = new THREE.Points(geometry, material);
-    scene.add(points);
-
-    // Connecting lines
-    const maxConnections = 90;
-    const lineGeometry = new THREE.BufferGeometry();
-    const linePositions = new Float32Array(maxConnections * 2 * 3);
-    lineGeometry.setAttribute("position", new THREE.BufferAttribute(linePositions, 3));
-
-    const lineMaterial = new THREE.LineBasicMaterial({
-      color: visualMode === "genz" ? 0xff33b0 : 0x866327,
-      transparent: true,
-      opacity: visualMode === "genz" ? 0.25 : 0.22,
-      linewidth: 1
-    });
-
-    const lineSegments = new THREE.LineSegments(lineGeometry, lineMaterial);
-    scene.add(lineSegments);
-
-    function resize() {
-      const width = canvas.clientWidth || window.innerWidth;
-      const height = canvas.clientHeight || window.innerHeight;
-      renderer.setSize(width, height, false);
-      camera.aspect = width / Math.max(height, 1);
-      camera.updateProjectionMatrix();
-    }
-
-    let mouseX = 0;
-    let mouseY = 0;
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX = (e.clientX - window.innerWidth / 2) * 0.0025;
-      mouseY = (e.clientY - window.innerHeight / 2) * 0.0025;
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-
-    let frameId = 0;
-    function render() {
-      // Float particles
-      for (let i = 0; i < pointsCount; i++) {
-        particlePositions[i].add(velocities[i]);
-        if (Math.abs(particlePositions[i].x) > 10) velocities[i].x *= -1;
-        if (Math.abs(particlePositions[i].y) > 6) velocities[i].y *= -1;
-        if (Math.abs(particlePositions[i].z) > 10) velocities[i].z *= -1;
-      }
-      updatePositions();
-
-      // Recalculate connections
-      let lineIndex = 0;
-      for (let i = 0; i < pointsCount; i++) {
-        for (let j = i + 1; j < pointsCount; j++) {
-          const dist = particlePositions[i].distanceTo(particlePositions[j]);
-          if (dist < 4.2 && lineIndex < maxConnections) {
-            const stride = lineIndex * 6;
-            linePositions[stride] = particlePositions[i].x;
-            linePositions[stride + 1] = particlePositions[i].y;
-            linePositions[stride + 2] = particlePositions[i].z;
-            linePositions[stride + 3] = particlePositions[j].x;
-            linePositions[stride + 4] = particlePositions[j].y;
-            linePositions[stride + 5] = particlePositions[j].z;
-            lineIndex++;
-          }
-        }
-      }
-      for (let i = lineIndex; i < maxConnections; i++) {
-        const stride = i * 6;
-        linePositions[stride] = 0;
-        linePositions[stride + 1] = 0;
-        linePositions[stride + 2] = 0;
-        linePositions[stride + 3] = 0;
-        linePositions[stride + 4] = 0;
-        linePositions[stride + 5] = 0;
-      }
-      lineGeometry.attributes.position.needsUpdate = true;
-
-      // Mouse camera drift
-      camera.position.x += (mouseX - camera.position.x) * 0.04;
-      camera.position.y += (-mouseY - camera.position.y) * 0.04;
-      camera.lookAt(scene.position);
-
-      renderer.render(scene, camera);
-      frameId = window.requestAnimationFrame(render);
-    }
-
-    resize();
-    window.addEventListener("resize", resize);
-    frameId = window.requestAnimationFrame(render);
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", handleMouseMove);
-      geometry.dispose();
-      material.dispose();
-      lineGeometry.dispose();
-      lineMaterial.dispose();
-      renderer.dispose();
-    };
-  }, [visualMode]);
-
-  return <canvas className="three-field" ref={canvasRef} aria-hidden="true" />;
+/* ── Navbar icon-only button for the Lexicon ── */
+function LexiconIconButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      className="lexicon-icon-btn"
+      type="button"
+      onClick={onClick}
+      aria-label="Open Live Lexicon"
+      title="Live Lexicon"
+    >
+      <BookOpen size={19} />
+    </button>
+  );
 }
 
+/* ── NavButton ── */
 function NavButton({
   icon,
   label,
@@ -229,159 +85,161 @@ function NavButton({
   );
 }
 
+/* ── HomePage ── */
 function HomePage({
   visualMode,
   onStart,
-  onPrompt,
-  onSwitchVisual,
-  barbaLabel
+  onSwitchVisual
 }: {
   visualMode: VisualMode;
   onStart: () => void;
-  onPrompt: () => void;
   onSwitchVisual: (mode: VisualMode) => void;
-  barbaLabel: string;
 }) {
-  // Reveal elements on mount with GSAP and IntersectionObserver
+  const heroRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    // Initial hero load
-    gsap.fromTo(
-      ".hero-copy h1",
-      { opacity: 0, y: 35 },
-      { opacity: 1, y: 0, duration: 0.9, ease: "power4.out" }
-    );
-    gsap.fromTo(
-      ".hero-copy .hero-text",
-      { opacity: 0, y: 25 },
-      { opacity: 1, y: 0, duration: 0.9, delay: 0.25, ease: "power4.out" }
-    );
-    gsap.fromTo(
-      ".hero-copy .hero-actions button",
-      { opacity: 0, y: 15 },
-      { opacity: 1, y: 0, duration: 0.6, delay: 0.45, stagger: 0.12, ease: "power3.out" }
-    );
+    const ctx = gsap.context(() => {
+      gsap.fromTo(".hero-copy h1", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 1, ease: "power4.out" });
+      gsap.fromTo(".hero-copy .hero-text", { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.9, delay: 0.22, ease: "power4.out" });
+      gsap.fromTo(".hero-actions .btn", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.7, delay: 0.44, stagger: 0.14, ease: "power3.out" });
+      gsap.fromTo(".hero-photos", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 1.1, delay: 0.3, ease: "power3.out" });
 
-    // Scroll reveal observer
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            gsap.fromTo(
-              entry.target,
-              { opacity: 0, y: 35, scale: 0.97 },
-              { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "power3.out" }
-            );
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.08 }
-    );
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              gsap.fromTo(entry.target, { opacity: 0, y: 38, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.75, ease: "power3.out" });
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.07 }
+      );
+      document.querySelectorAll(".bento-tile, .showcase-tile, .mode-showcase").forEach((el) => observer.observe(el));
+      return () => observer.disconnect();
+    }, heroRef);
 
-    document.querySelectorAll(".bento-tile, .showcase-tile, .mode-showcase").forEach((el) => {
-      observer.observe(el);
-    });
-
-    return () => observer.disconnect();
+    return () => ctx.revert();
   }, []);
 
   return (
-    <section className="home-page">
-      {/* VibeUI tech lines background */}
+    <section className="home-page" ref={heroRef}>
+      {/* Subtle VibeUI marker lines */}
       <div className="vibe-grid-lines" aria-hidden="true">
         <div className="vibe-line horizontal top" />
         <div className="vibe-line vertical left" />
         <div className="vibe-crosshair top-left">+</div>
         <div className="vibe-crosshair top-right">+</div>
-        <div className="vibe-crosshair bottom-left">+</div>
-        <div className="vibe-crosshair bottom-right">+</div>
       </div>
 
-      {/* VibeUI floating badges */}
+      {/* Status badges */}
       <div className="vibe-tech-info" aria-hidden="true">
         <span className="vibe-dot pulsing" />
-        <span className="vibe-badge">NEXUS STATUS: ACTIVE</span>
+        <span className="vibe-badge">NEXUS: ACTIVE</span>
         <span className="vibe-badge">LATENCY: 14MS</span>
-        <span className="vibe-badge">LENIS: ACTIVE</span>
         <span className="vibe-badge">GSAP: RENDERING</span>
       </div>
 
+      {/* Hero Section */}
       <div className="hero-band">
         <div className="hero-copy">
           <p className="section-kicker">Genza Intergenerational Bridge</p>
-          <h1>Connecting Generations with Translation and Explanations.</h1>
+          <h1>Connecting Generations Through Language.</h1>
           <p className="hero-text">
-            Genza transforms slang, tone, and cultural contexts between Gen Z and adults. The translation engine explains each change so both sides can learn the other's language.
+            Genza translates slang, tone, and cultural context between Gen Z and adults. The engine explains every change so both sides can learn each other's language.
           </p>
           <div className="hero-actions">
-            <button className="primary-action bounce-action" type="button" onClick={onStart}>
+            <button className="btn btn-primary" type="button" onClick={onStart}>
               <Wand2 size={18} />
-              Open language bridge
+              Open Language Bridge
             </button>
-            <button className="secondary-action" type="button" onClick={onPrompt}>
-              <FileText size={18} />
-              Edit master prompt
+            <button className="btn btn-ghost" type="button" onClick={() => onSwitchVisual(visualMode === "genz" ? "classic" : "genz")}>
+              <Library size={18} />
+              Switch Mode
             </button>
           </div>
         </div>
 
-        <div className="hero-stage" aria-label="Generation bridge preview">
+        {/* Real photos section */}
+        <div className="hero-photos" aria-label="Generation bridge preview">
           {optionalSplineScene ? (
-            <Suspense fallback={<div className="spline-fallback">Loading 3D bridge</div>}>
+            <Suspense fallback={<div className="spline-fallback">Loading…</div>}>
               <Spline scene={optionalSplineScene} className="spline-scene" />
             </Suspense>
           ) : (
-            <div className="signal-map">
-              <div className="signal-node node-left">Gen Z</div>
-              <div className="signal-beam" />
-              <div className="signal-node node-right">Classic</div>
-              <div className="floating-phrase phrase-one">slang conversion</div>
-              <div className="floating-phrase phrase-two">tone normalization</div>
-              <div className="floating-phrase phrase-three">cultural context</div>
+            <div className="photo-collage">
+              <div className="photo-card photo-card--main">
+                <img src="/Generation-Z.jpg" alt="Generation Z group" loading="lazy" />
+                <div className="photo-badge">Gen Z</div>
+              </div>
+              <div className="photo-card photo-card--secondary">
+                <img src="/old_people.jpg" alt="Classic generation adults" loading="lazy" />
+                <div className="photo-badge classic-badge">Classic</div>
+              </div>
+              <div className="photo-card photo-card--accent">
+                <img src="/old_people_with_a_kid.webp" alt="Generations together" loading="lazy" />
+              </div>
+              <div className="bridge-pill">
+                <ArrowRightLeft size={16} />
+                <span>Language Bridge</span>
+              </div>
             </div>
           )}
         </div>
       </div>
 
+      {/* Mode Switch Cards */}
       <div className="mode-showcase">
         <button
           className={visualMode === "genz" ? "showcase-tile active" : "showcase-tile"}
           type="button"
           onClick={() => onSwitchVisual("genz")}
         >
-          <Sparkles size={19} />
-          <strong>Gen Z mode</strong>
-          <span>Vibrant light background, bouncing cards, emojis, slang tags, neon effects.</span>
+          <div className="showcase-tile-img">
+            <img src="/Gen-Z-.jpeg" alt="Gen Z style" loading="lazy" />
+          </div>
+          <div className="showcase-tile-info">
+            <Sparkles size={19} />
+            <strong>Gen Z Mode</strong>
+            <span>Vibrant light background, neon effects, bouncing cards, slang tags.</span>
+          </div>
         </button>
         <button
           className={visualMode === "classic" ? "showcase-tile active classic-tile" : "showcase-tile classic-tile"}
           type="button"
           onClick={() => onSwitchVisual("classic")}
         >
-          <Library size={19} />
-          <strong>Classic mode</strong>
-          <span>Moving aristocratic wallpaper, serif typography, page flipping book.</span>
+          <div className="showcase-tile-img">
+            <img src="/old_people2.avif" alt="Classic style" loading="lazy" />
+          </div>
+          <div className="showcase-tile-info">
+            <Library size={19} />
+            <strong>Classic Mode</strong>
+            <span>Moving aristocratic wallpaper, serif typography, page-flipping dictionary.</span>
+          </div>
         </button>
       </div>
 
+      {/* Bento Cards */}
       <section className="bento-grid" aria-label="Genza product overview">
         <article className="bento-tile large">
-          <Brain size={21} />
+          <Brain size={22} />
           <h2>Deep Translation System</h2>
-          <p>
-            The translation uses LLM prompt engineering, sentiment scoring, and context adaptation. Rather than simple word replacing, it shifts entire tones.
-          </p>
+          <p>The engine uses LLM prompt engineering, sentiment scoring, and context adaptation. Rather than simple word swapping, it shifts entire tones and registers.</p>
           <div className="bento-glow" />
+          <div className="bento-img-bg">
+            <img src="/genz_swang_sticker.png" alt="" aria-hidden="true" loading="lazy" />
+          </div>
         </article>
         <article className="bento-tile">
           <ArrowRightLeft size={20} />
-          <h2>Dual Directional Engine</h2>
-          <p>Translate from Gen Z slang to Classic adult tone, or turn formal announcements into casual slang.</p>
+          <h2>Dual Direction Engine</h2>
+          <p>Translate Gen Z slang to classic adult tone, or turn formal language into casual slang.</p>
         </article>
         <article className="bento-tile">
           <BookOpen size={20} />
-          <h2>Interactive Lexicon Book</h2>
-          <p>A navbar-accessible 3D dictionary with animated page turns, definitions, tone labels, and synonyms.</p>
+          <h2>Interactive Lexicon</h2>
+          <p>A 3D dictionary with animated page turns, definitions, tone labels, and synonym navigation.</p>
         </article>
         <article className="bento-tile wide">
           <Layers size={20} />
@@ -399,14 +257,24 @@ function HomePage({
         </article>
         <article className="bento-tile">
           <PenLine size={20} />
-          <h2>Advanced Visual stack</h2>
-          <p>Integrated with GSAP, Anime.js, Lenis, and Three.js, with vibeui.online interactive blueprints.</p>
+          <h2>Advanced Visual Stack</h2>
+          <p>Integrated with GSAP, Anime.js, Lenis, and Barba.js with VibeUI interactive blueprints.</p>
         </article>
       </section>
+
+      {/* People sticker row */}
+      <div className="sticker-row" aria-hidden="true">
+        <img src="/old_people_sticker.png" alt="" className="sticker sticker-old" loading="lazy" />
+        <div className="sticker-divider" />
+        <img src="/kid.webp" alt="" className="sticker sticker-kid" loading="lazy" />
+        <div className="sticker-divider" />
+        <img src="/old_people_sticker2.png" alt="" className="sticker sticker-old2" loading="lazy" />
+      </div>
     </section>
   );
 }
 
+/* ── BridgePage ── */
 function BridgePage({
   mode,
   setMode,
@@ -455,8 +323,8 @@ function BridgePage({
           <label>
             <span>Direction</span>
             <select value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
-              <option value="genz_to_adult">Gen Z to Adult</option>
-              <option value="adult_to_genz">Adult to Gen Z</option>
+              <option value="genz_to_adult">Gen Z → Adult</option>
+              <option value="adult_to_genz">Adult → Gen Z</option>
             </select>
           </label>
           <label className="explain-toggle">
@@ -475,20 +343,20 @@ function BridgePage({
               <h2>{mode === "genz_to_adult" ? "Social message" : "Formal message"}</h2>
             </div>
             <button type="button" className="icon-button" onClick={() => setText("")} aria-label="Clear input">
-              <RefreshCcw size={17} />
+              <RefreshCcw size={16} />
             </button>
           </div>
           <textarea
             value={text}
             onChange={(event) => setText(event.target.value)}
             maxLength={1200}
-            placeholder="Write a message..."
+            placeholder="Write a message…"
           />
           <div className="pane-foot">
             <span>{text.length}/1200</span>
-            <button className="primary-action bounce-action" type="button" onClick={onTranslate} disabled={isTranslating || isPending}>
-              <Wand2 size={18} />
-              {isTranslating ? "Translating" : "Translate"}
+            <button className="btn btn-primary" type="button" onClick={onTranslate} disabled={isTranslating || isPending}>
+              <Wand2 size={17} />
+              {isTranslating ? "Translating…" : "Translate"}
             </button>
           </div>
         </section>
@@ -500,7 +368,7 @@ function BridgePage({
               <h2>{targetLabel(mode)}</h2>
             </div>
             <button type="button" className="icon-button" onClick={onCopy} aria-label="Copy output">
-              {copied ? <Clipboard size={17} /> : <Copy size={17} />}
+              {copied ? <Clipboard size={16} /> : <Copy size={16} />}
             </button>
           </div>
           <div className={`result-box ${result ? "filled" : ""}`}>
@@ -564,6 +432,7 @@ function BridgePage({
   );
 }
 
+/* ── AuthPage ── */
 function AuthPage({
   authMode,
   setAuthMode,
@@ -590,7 +459,6 @@ function AuthPage({
       setErrorMsg("Please fill in all required fields.");
       return;
     }
-
     if (password.length < 6) {
       setErrorMsg("Password must be at least 6 characters.");
       return;
@@ -598,8 +466,7 @@ function AuthPage({
 
     if (isRegister) {
       const existingUsers = JSON.parse(localStorage.getItem("genza-users") || "[]");
-      const userExists = existingUsers.some((u: any) => u.email === email);
-      if (userExists) {
+      if (existingUsers.some((u: any) => u.email === email)) {
         setErrorMsg("A user with this email already exists.");
         return;
       }
@@ -607,47 +474,37 @@ function AuthPage({
       existingUsers.push(newUser);
       localStorage.setItem("genza-users", JSON.stringify(existingUsers));
       localStorage.setItem("genza-current-user", JSON.stringify(newUser));
-
-      setSuccessMsg("Account created successfully! Redirecting...");
-      setTimeout(() => {
-        onLoginSuccess(newUser);
-      }, 1200);
+      setSuccessMsg("Account created! Redirecting…");
+      setTimeout(() => onLoginSuccess(newUser), 1200);
     } else {
-      const existingUsers = JSON.parse(localStorage.getItem("genza-users") || "[]");
-      
-      // Default hackathon admin account
       if (email === "demo@genza.app" && password === "password123") {
         const demoUser = { name: "Demo User", email, role: "mentor" };
         localStorage.setItem("genza-current-user", JSON.stringify(demoUser));
-        setSuccessMsg("Success! Accessing language bridge...");
-        setTimeout(() => {
-          onLoginSuccess(demoUser);
-        }, 1200);
+        setSuccessMsg("Success! Accessing language bridge…");
+        setTimeout(() => onLoginSuccess(demoUser), 1200);
         return;
       }
-
+      const existingUsers = JSON.parse(localStorage.getItem("genza-users") || "[]");
       const user = existingUsers.find((u: any) => u.email === email && u.password === password);
       if (!user) {
-        setErrorMsg("Invalid credentials. Try registering or use: demo@genza.app / password123");
+        setErrorMsg("Invalid credentials. Try: demo@genza.app / password123");
         return;
       }
-
       localStorage.setItem("genza-current-user", JSON.stringify(user));
-      setSuccessMsg("Welcome back! Loading session...");
-      setTimeout(() => {
-        onLoginSuccess(user);
-      }, 1200);
+      setSuccessMsg("Welcome back! Loading session…");
+      setTimeout(() => onLoginSuccess(user), 1200);
     }
   };
 
   return (
     <section className="auth-page">
       <div className="auth-copy">
+        <div className="auth-copy-img">
+          <img src="/old_people_with_a_kid.webp" alt="Generations together" loading="lazy" />
+        </div>
         <p className="section-kicker">Genza workspace</p>
         <h1>{isRegister ? "Join the Genza workspace." : "Log in to your translator workspace."}</h1>
-        <p>
-          Gain access to advanced intergenerational translations, customize slang settings, save translation logs, and test demo-ready dialogues.
-        </p>
+        <p>Gain access to advanced intergenerational translations, slang settings, and demo-ready dialogues.</p>
         <div className="auth-preview">
           <span>Custom slang parameters</span>
           <span>Dictionary contributions</span>
@@ -658,29 +515,24 @@ function AuthPage({
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
           <button className={!isRegister ? "active" : ""} type="button" onClick={() => setAuthMode("login")}>
-            <LogIn size={17} />
+            <LogIn size={16} />
             Login
           </button>
           <button className={isRegister ? "active" : ""} type="button" onClick={() => setAuthMode("register")}>
-            <UserPlus size={17} />
+            <UserPlus size={16} />
             Register
           </button>
         </div>
 
         {errorMsg ? <div className="error-line">{errorMsg}</div> : null}
-        {successMsg ? <div className="success-line" style={{ padding: "12px", background: "rgba(15, 174, 155, 0.15)", border: "1px solid var(--accent)", borderRadius: "8px", color: "var(--accent)", fontWeight: "bold" }}>{successMsg}</div> : null}
+        {successMsg ? <div className="success-line">{successMsg}</div> : null}
 
         {isRegister ? (
           <label className="field">
             <span>Name</span>
             <div>
-              <User size={17} />
-              <input
-                placeholder="Alex Rivera"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+              <User size={16} />
+              <input placeholder="Alex Rivera" type="text" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
           </label>
         ) : null}
@@ -688,26 +540,16 @@ function AuthPage({
         <label className="field">
           <span>Email Address</span>
           <div>
-            <Mail size={17} />
-            <input
-              placeholder="you@genza.app"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <Mail size={16} />
+            <input placeholder="you@genza.app" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
         </label>
 
         <label className="field">
           <span>Password</span>
           <div>
-            <Lock size={17} />
-            <input
-              placeholder="Minimum 6 characters"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <Lock size={16} />
+            <input placeholder="Minimum 6 characters" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
         </label>
 
@@ -723,8 +565,8 @@ function AuthPage({
           </label>
         ) : null}
 
-        <button className="primary-action full" type="submit">
-          <KeyRound size={18} />
+        <button className="btn btn-primary btn-full" type="submit">
+          <KeyRound size={17} />
           {isRegister ? "Register profile" : "Log in"}
         </button>
       </form>
@@ -732,63 +574,7 @@ function AuthPage({
   );
 }
 
-function MasterPromptPage({
-  promptDraft,
-  setPromptDraft,
-  onReset,
-  onCopy,
-  copied
-}: {
-  promptDraft: string;
-  setPromptDraft: (value: string) => void;
-  onReset: () => void;
-  onCopy: () => void;
-  copied: boolean;
-}) {
-  return (
-    <section className="prompt-page">
-      <div className="prompt-head">
-        <div>
-          <p className="section-kicker">Hackathon generator</p>
-          <h1>Editable Master Prompt</h1>
-          <p>The prompt is emoji-free, renamed for Genza, and includes the missing product requirements.</p>
-        </div>
-        <div className="prompt-actions">
-          <button className="secondary-action" type="button" onClick={onReset}>
-            <RefreshCcw size={17} />
-            Reset
-          </button>
-          <button className="primary-action" type="button" onClick={onCopy}>
-            {copied ? <Clipboard size={17} /> : <Copy size={17} />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
-      </div>
-
-      <div className="prompt-layout">
-        <textarea
-          className="master-prompt-editor"
-          value={promptDraft}
-          onChange={(event) => setPromptDraft(event.target.value)}
-          spellCheck={false}
-        />
-        <aside className="prompt-summary">
-          <h2>Included</h2>
-          <ul>
-            <li>POST /translate contract</li>
-            <li>Why It Changed explainer</li>
-            <li>Dual Gen Z and Classic design systems</li>
-            <li>Bridge transition requirement</li>
-            <li>Interactive dictionary with synonyms</li>
-            <li>React, Express, LLM, GSAP, Anime, Lenis, Three, Spline, Barba</li>
-            <li>Devpost-ready pitch expectations</li>
-          </ul>
-        </aside>
-      </div>
-    </section>
-  );
-}
-
+/* ── LexiconBook ── */
 function LexiconBook({
   open,
   visualMode,
@@ -813,38 +599,28 @@ function LexiconBook({
   const [flipDirection, setFlipDirection] = useState<"forward" | "backward">("forward");
   const bookRef = useRef<HTMLDivElement | null>(null);
 
-  // Trigger flipping sequence when target index changes
   useEffect(() => {
-    if (pageIndex === localPageIndex) {
-      return;
-    }
+    if (pageIndex === localPageIndex) return;
     const direction = pageIndex > localPageIndex ? "forward" : "backward";
     setFlipDirection(direction);
     setIsFlipping(true);
-
     const timer = setTimeout(() => {
       setLocalPageIndex(pageIndex);
       setIsFlipping(false);
-    }, 600); // sync with CSS animation time
-
+    }, 600);
     return () => clearTimeout(timer);
   }, [pageIndex, localPageIndex]);
 
-  // Entrance zoom using GSAP
   useEffect(() => {
-    if (!open || !bookRef.current) {
-      return;
-    }
+    if (!open || !bookRef.current) return;
     gsap.fromTo(
       bookRef.current,
-      { opacity: 0, scale: 0.94, rotateX: 10 },
-      { opacity: 1, scale: 1, rotateX: 0, duration: 0.45, ease: "back.out(1.3)" }
+      { opacity: 0, scale: 0.93, rotateX: 12 },
+      { opacity: 1, scale: 1, rotateX: 0, duration: 0.48, ease: "back.out(1.4)" }
     );
   }, [open]);
 
-  if (!open) {
-    return null;
-  }
+  if (!open) return null;
 
   const currentEntry = dictionary[localPageIndex] || entry;
   const targetEntryForFlip = dictionary[pageIndex] || entry;
@@ -855,9 +631,7 @@ function LexiconBook({
         item.term.toLowerCase() === synonym.toLowerCase() ||
         item.synonyms.some((s) => s.toLowerCase() === synonym.toLowerCase())
     );
-    if (matchedIdx !== -1) {
-      onSelect(matchedIdx);
-    }
+    if (matchedIdx !== -1) onSelect(matchedIdx);
   };
 
   return (
@@ -876,7 +650,7 @@ function LexiconBook({
         </div>
 
         <div className="book-spread">
-          {/* Static Index Page on Left */}
+          {/* Index page */}
           <section className="book-page book-left">
             <h3>Vocabulary Index</h3>
             <div className="lexicon-index">
@@ -894,20 +668,15 @@ function LexiconBook({
             </div>
           </section>
 
-          {/* Details Page on Right (shows destination details once flip is complete) */}
+          {/* Entry detail page */}
           <section className="book-page book-right">
             <div className="entry-header">
               <span className={`tone-label ${entry.tone}`}>{entry.tone}</span>
-              <span className="entry-count">
-                Page {pageIndex + 1} of {dictionary.length}
-              </span>
+              <span className="entry-count">Page {pageIndex + 1} of {dictionary.length}</span>
             </div>
             <h3>{entry.term}</h3>
-            
             <div className="lexicon-divider" />
-            
             <p className="entry-definition">{entry.definition}</p>
-            
             <div className="entry-details">
               <div>
                 <dt>Classic definition</dt>
@@ -922,15 +691,10 @@ function LexiconBook({
                 <dd>"{entry.usageExample}"</dd>
               </div>
               <div>
-                <dt>Interactive Synonyms (Click to turn page)</dt>
+                <dt>Interactive Synonyms (click to flip)</dt>
                 <dd className="synonym-tags">
                   {entry.synonyms.map((syn) => (
-                    <button
-                      key={syn}
-                      type="button"
-                      className="synonym-tag-btn"
-                      onClick={() => handleSynonymClick(syn)}
-                    >
+                    <button key={syn} type="button" className="synonym-tag-btn" onClick={() => handleSynonymClick(syn)}>
                       {syn}
                     </button>
                   ))}
@@ -939,7 +703,7 @@ function LexiconBook({
             </div>
           </section>
 
-          {/* Flipping animation sheet overlay */}
+          {/* Flip animation overlay */}
           {isFlipping && (
             <div className={`book-page-flipping flip-${flipDirection}`}>
               <div className="flipping-face front">
@@ -963,13 +727,13 @@ function LexiconBook({
         </div>
 
         <div className="book-controls">
-          <button className="secondary-action" type="button" onClick={onPrev}>
-            <ChevronLeft size={18} />
+          <button className="btn btn-ghost" type="button" onClick={onPrev}>
+            <ChevronLeft size={17} />
             Prev Page
           </button>
-          <button className="secondary-action" type="button" onClick={onNext}>
+          <button className="btn btn-ghost" type="button" onClick={onNext}>
             Next Page
-            <ChevronRight size={18} />
+            <ChevronRight size={17} />
           </button>
         </div>
       </div>
@@ -977,6 +741,7 @@ function LexiconBook({
   );
 }
 
+/* ── Root App ── */
 function App() {
   const [page, setPage] = useState<Page>("home");
   const [mode, setMode] = useState<Mode>("genz_to_adult");
@@ -985,7 +750,6 @@ function App() {
   const [result, setResult] = useState<TranslationResult | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const [promptCopied, setPromptCopied] = useState(false);
   const [showExplain, setShowExplain] = useState(true);
   const [isTranslating, setIsTranslating] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -993,103 +757,65 @@ function App() {
   const [bookPage, setBookPage] = useState(0);
   const [authMode, setAuthMode] = useState<"login" | "register">("register");
   const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string } | null>(null);
-  const [promptDraft, setPromptDraft] = useState(() => localStorage.getItem("genza-master-prompt") || masterPrompt);
   const pageRef = useRef<HTMLDivElement | null>(null);
   const bridgeFlashRef = useRef<HTMLDivElement | null>(null);
+
+  const barbaLabel = useMemo(() => {
+    const core = barba as { version?: string };
+    return `Barba ${core.version || "2"}`;
+  }, []);
 
   const activeExamples = useMemo(() => examples.filter((example) => example.mode === mode), [mode]);
   const matchedEntries = useMemo(() => getMatchedEntries(text, result), [text, result]);
   const activeEntry = dictionary[bookPage] || dictionary[0];
-  const barbaLabel = useMemo(() => {
-    const core = barba as { version?: string };
-    return `Barba ${core.version || "2"} style`;
-  }, []);
 
-  // Check for active login session on mount
+  // Restore session
   useEffect(() => {
     const saved = localStorage.getItem("genza-current-user");
     if (saved) {
-      try {
-        setCurrentUser(JSON.parse(saved));
-      } catch (e) {
-        console.warn("Failed to parse local session.");
-      }
+      try { setCurrentUser(JSON.parse(saved)); } catch { /* ignore */ }
     }
   }, []);
 
+  // Smooth scroll via Lenis
   useEffect(() => {
     const lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
     let frameId = 0;
-
-    function raf(time: number) {
-      lenis.raf(time);
-      frameId = requestAnimationFrame(raf);
-    }
-
+    function raf(time: number) { lenis.raf(time); frameId = requestAnimationFrame(raf); }
     frameId = requestAnimationFrame(raf);
-    return () => {
-      cancelAnimationFrame(frameId);
-      lenis.destroy();
-    };
+    return () => { cancelAnimationFrame(frameId); lenis.destroy(); };
   }, []);
 
-  // Screen transition animate in (similar to Barba js)
+  // Barba-style page transition on page change
   useEffect(() => {
-    if (!pageRef.current) {
-      return;
-    }
-
+    if (!pageRef.current) return;
     gsap.fromTo(
       pageRef.current,
-      { autoAlpha: 0, y: 24, filter: "blur(5px)" },
-      { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.65, ease: "power4.out" }
+      { autoAlpha: 0, y: 28, filter: "blur(6px)" },
+      { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.6, ease: "power4.out" }
     );
   }, [page]);
 
+  // Anime.js for translation result pop
   useEffect(() => {
-    localStorage.setItem("genza-master-prompt", promptDraft);
-  }, [promptDraft]);
-
-  useEffect(() => {
-    if (!result) {
-      return;
-    }
-
-    animate(".reaction-pop", {
-      opacity: [0, 1],
-      y: [14, 0],
-      scale: [0.92, 1],
-      duration: 520,
-      ease: "outBack"
-    });
-
-    animate(".slang-chip", {
-      opacity: [0, 1],
-      y: [12, 0],
-      delay: stagger(65),
-      duration: 420,
-      ease: "outCubic"
-    });
+    if (!result) return;
+    animate(".reaction-pop", { opacity: [0, 1], y: [14, 0], scale: [0.92, 1], duration: 520, ease: "outBack" });
+    animate(".slang-chip", { opacity: [0, 1], y: [12, 0], delay: stagger(65), duration: 420, ease: "outCubic" });
   }, [result]);
 
   function switchVisualMode(nextMode: VisualMode) {
-    if (nextMode === visualMode) {
-      return;
-    }
-
+    if (nextMode === visualMode) return;
     const flash = bridgeFlashRef.current;
     if (flash) {
       gsap.set(flash, {
         opacity: 1,
         scaleX: nextMode === "classic" ? 1.08 : 0.72,
-        background:
-          nextMode === "classic"
-            ? "linear-gradient(90deg, rgba(42, 28, 12, 0), rgba(217, 184, 99, 0.72), rgba(42, 28, 12, 0))"
-            : "linear-gradient(90deg, rgba(0, 245, 255, 0), rgba(255, 51, 176, 0.8), rgba(197, 255, 54, 0))"
+        background: nextMode === "classic"
+          ? "linear-gradient(90deg, rgba(42,28,12,0), rgba(217,184,99,0.72), rgba(42,28,12,0))"
+          : "linear-gradient(90deg, rgba(0,245,255,0), rgba(255,51,176,0.8), rgba(197,255,54,0))"
       });
       gsap.to(flash, { opacity: 0, scaleX: nextMode === "classic" ? 0.2 : 1.26, duration: 0.78, ease: "power3.out" });
     }
-
     gsap.fromTo(
       ".nav-shell, .page-shell",
       { filter: nextMode === "classic" ? "saturate(1.7) blur(1px)" : "sepia(0.7) blur(1px)" },
@@ -1102,7 +828,6 @@ function App() {
     setError("");
     setCopied(false);
     setIsTranslating(true);
-
     try {
       const nextResult = await translateMessage(text, mode);
       startTransition(() => setResult(nextResult));
@@ -1123,19 +848,10 @@ function App() {
   }
 
   async function copyOutput() {
-    if (!result?.translated) {
-      return;
-    }
-
+    if (!result?.translated) return;
     await navigator.clipboard.writeText(result.translated);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1400);
-  }
-
-  async function copyPrompt() {
-    await navigator.clipboard.writeText(promptDraft);
-    setPromptCopied(true);
-    window.setTimeout(() => setPromptCopied(false), 1400);
   }
 
   function selectBookPage(index: number) {
@@ -1153,18 +869,21 @@ function App() {
     setPage("home");
   };
 
+  // Suppress unused var warning for barbaLabel
+  void barbaLabel;
+
   return (
     <main className={`app-shell ${visualMode}`} data-barba="wrapper">
-      {/* VibeUI background overlay */}
+      {/* Background layers */}
       <div className="grid-backdrop" aria-hidden="true" />
       <div className="wallpaper-motion" aria-hidden="true" />
-      <ThreeSignalField visualMode={visualMode} />
       <div className="bridge-flash" ref={bridgeFlashRef} aria-hidden="true" />
 
+      {/* Navigation */}
       <nav className="nav-shell" aria-label="Main navigation">
         <button className="brand-lockup" type="button" onClick={() => setPage("home")}>
           <span className="brand-mark">
-            <ArrowRightLeft size={21} />
+            <ArrowRightLeft size={20} />
           </span>
           <span>
             <strong>Genza</strong>
@@ -1173,37 +892,19 @@ function App() {
         </button>
 
         <div className="nav-links">
-          <NavButton icon={<Home size={17} />} label="Home" active={page === "home"} onClick={() => setPage("home")} />
-          <NavButton
-            icon={<Wand2 size={17} />}
-            label="Bridge"
-            active={page === "bridge"}
-            onClick={() => setPage("bridge")}
-          />
-          <NavButton
-            icon={<FileText size={17} />}
-            label="Master Prompt"
-            active={page === "prompt"}
-            onClick={() => setPage("prompt")}
-          />
-          <button className="nav-link lexicon-nav" type="button" onClick={() => setLexiconOpen(true)}>
-            <BookOpen size={17} />
-            <span>Live Lexicon</span>
-          </button>
+          <NavButton icon={<Home size={16} />} label="Home" active={page === "home"} onClick={() => setPage("home")} />
+          <NavButton icon={<Wand2 size={16} />} label="Bridge" active={page === "bridge"} onClick={() => setPage("bridge")} />
+          <LexiconIconButton onClick={() => setLexiconOpen(true)} />
         </div>
 
         <div className="nav-actions">
           <div className="visual-switch" aria-label="Visual mode">
             <button className={visualMode === "genz" ? "active" : ""} type="button" onClick={() => switchVisualMode("genz")}>
-              <Sparkles size={16} />
+              <Sparkles size={15} />
               Gen Z
             </button>
-            <button
-              className={visualMode === "classic" ? "active" : ""}
-              type="button"
-              onClick={() => switchVisualMode("classic")}
-            >
-              <Library size={16} />
+            <button className={visualMode === "classic" ? "active" : ""} type="button" onClick={() => switchVisualMode("classic")}>
+              <Library size={15} />
               Classic
             </button>
           </div>
@@ -1218,27 +919,22 @@ function App() {
                 <small>{currentUser.role}</small>
               </div>
               <button className="logout-btn" type="button" onClick={handleLogout} title="Log out">
-                <X size={15} />
+                <X size={14} />
               </button>
             </div>
           ) : (
-            <button className="login-chip" type="button" onClick={() => setPage("auth")}>
-              <LogIn size={17} />
+            <button className="btn btn-ghost btn-sm" type="button" onClick={() => setPage("auth")}>
+              <LogIn size={16} />
               Login
             </button>
           )}
         </div>
       </nav>
 
+      {/* Page content */}
       <div className="page-shell" ref={pageRef} data-barba="container" data-barba-namespace={page}>
         {page === "home" ? (
-          <HomePage
-            visualMode={visualMode}
-            onStart={() => setPage("bridge")}
-            onPrompt={() => setPage("prompt")}
-            onSwitchVisual={switchVisualMode}
-            barbaLabel={barbaLabel}
-          />
+          <HomePage visualMode={visualMode} onStart={() => setPage("bridge")} onSwitchVisual={switchVisualMode} />
         ) : null}
 
         {page === "bridge" ? (
@@ -1264,24 +960,11 @@ function App() {
         ) : null}
 
         {page === "auth" ? (
-          <AuthPage
-            authMode={authMode}
-            setAuthMode={setAuthMode}
-            onLoginSuccess={handleLoginSuccess}
-          />
-        ) : null}
-
-        {page === "prompt" ? (
-          <MasterPromptPage
-            promptDraft={promptDraft}
-            setPromptDraft={setPromptDraft}
-            onReset={() => setPromptDraft(masterPrompt)}
-            onCopy={copyPrompt}
-            copied={promptCopied}
-          />
+          <AuthPage authMode={authMode} setAuthMode={setAuthMode} onLoginSuccess={handleLoginSuccess} />
         ) : null}
       </div>
 
+      {/* Lexicon book overlay */}
       <LexiconBook
         open={lexiconOpen}
         visualMode={visualMode}

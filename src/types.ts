@@ -1,6 +1,6 @@
 export type Mode = "genz_to_adult" | "adult_to_genz";
 export type VisualMode = "genz" | "classic";
-export type Page = "home" | "bridge" | "auth" | "prompt";
+export type Page = "home" | "bridge" | "auth";
 export type ToneLabel = "formal" | "slang" | "emotional" | "neutral";
 
 export type TranslationResult = {
