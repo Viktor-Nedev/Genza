@@ -11,14 +11,14 @@ app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, service: "nexus-api" });
+  res.json({ ok: true, service: "genza-api" });
 });
 
-app.get("/api/dictionary", (_req, res) => {
+app.get(["/api/dictionary", "/dictionary"], (_req, res) => {
   res.json({ entries: dictionary });
 });
 
-app.post("/api/translate", async (req, res) => {
+async function handleTranslate(req, res) {
   const text = String(req.body?.text || "");
   const mode = String(req.body?.mode || "genz_to_adult");
 
@@ -40,8 +40,10 @@ app.post("/api/translate", async (req, res) => {
   }
 
   res.json({ ...fallbackTranslate(text, mode), source: "fallback" });
-});
+}
+
+app.post(["/api/translate", "/translate"], handleTranslate);
 
 app.listen(port, () => {
-  console.log(`Nexus API listening on http://localhost:${port}`);
+  console.log(`Genza API listening on http://localhost:${port}`);
 });

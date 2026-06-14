@@ -1,7 +1,7 @@
 :root {
   font-family: "Aptos", "Segoe UI", sans-serif;
   color: #16201d;
-  background: #eef3ec;
+  background: #07090e;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -19,7 +19,9 @@ body {
 }
 
 button,
-textarea {
+textarea,
+input,
+select {
   font: inherit;
 }
 

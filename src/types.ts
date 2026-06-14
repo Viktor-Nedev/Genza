@@ -1,4 +1,7 @@
 export type Mode = "genz_to_adult" | "adult_to_genz";
+export type VisualMode = "genz" | "classic";
+export type Page = "home" | "bridge" | "auth" | "prompt";
+export type ToneLabel = "formal" | "slang" | "emotional" | "neutral";
 
 export type TranslationResult = {
   translated: string;
@@ -18,6 +21,11 @@ export type Example = {
 
 export type DictionaryEntry = {
   term: string;
-  adult: string;
+  classic: string;
   genz: string;
+  definition: string;
+  usageExample: string;
+  tone: ToneLabel;
+  synonyms: string[];
+  category: "slang" | "formal" | "emotion" | "culture";
 };

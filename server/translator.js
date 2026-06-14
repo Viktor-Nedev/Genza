@@ -39,14 +39,126 @@ const adultToSlang = [
 ];
 
 const dictionary = [
-  { term: "lowkey", adult: "quietly or somewhat", genz: "lowkey" },
-  { term: "cooked", adult: "overwhelmed or in trouble", genz: "cooked" },
-  { term: "sus", adult: "suspicious", genz: "sus" },
-  { term: "mid", adult: "not very impressive", genz: "mid" },
-  { term: "bet", adult: "understood or agreed", genz: "bet" },
-  { term: "rizz", adult: "social charm", genz: "rizz" },
-  { term: "ghosted", adult: "stopped responding", genz: "ghosted" },
-  { term: "ate", adult: "performed very well", genz: "ate" }
+  {
+    term: "cooked",
+    classic: "very difficult, overwhelmed, or in trouble",
+    genz: "cooked",
+    definition: "A casual signal that a task, plan, or person is under pressure or likely to fail.",
+    usageExample: "This assignment is cooked because nobody started the research.",
+    tone: "emotional",
+    synonyms: ["overwhelmed", "in trouble", "difficult"],
+    category: "slang"
+  },
+  {
+    term: "lowkey",
+    classic: "somewhat or quietly",
+    genz: "lowkey",
+    definition: "A softener that makes a statement feel less direct while still expressing a real opinion.",
+    usageExample: "I am lowkey worried about the deadline.",
+    tone: "slang",
+    synonyms: ["somewhat", "quietly", "mildly"],
+    category: "slang"
+  },
+  {
+    term: "fr",
+    classic: "honestly or seriously",
+    genz: "fr",
+    definition: "Short for 'for real'; used to mark sincerity or agreement.",
+    usageExample: "That meeting was confusing fr.",
+    tone: "slang",
+    synonyms: ["honestly", "seriously", "truly"],
+    category: "slang"
+  },
+  {
+    term: "sus",
+    classic: "suspicious or questionable",
+    genz: "sus",
+    definition: "A short way to say that something feels unreliable, odd, or untrustworthy.",
+    usageExample: "The last-minute change feels sus.",
+    tone: "slang",
+    synonyms: ["questionable", "untrustworthy", "odd"],
+    category: "slang"
+  },
+  {
+    term: "delulu",
+    classic: "unrealistic or wishful",
+    genz: "delulu",
+    definition: "A playful critique of an idea that seems disconnected from reality.",
+    usageExample: "Planning the whole project in one night is delulu.",
+    tone: "slang",
+    synonyms: ["unrealistic", "wishful", "impractical"],
+    category: "culture"
+  },
+  {
+    term: "mid",
+    classic: "average or not impressive",
+    genz: "mid",
+    definition: "A concise negative review meaning something is ordinary or disappointing.",
+    usageExample: "The first draft was mid, but the structure can improve.",
+    tone: "slang",
+    synonyms: ["average", "ordinary", "weak"],
+    category: "slang"
+  },
+  {
+    term: "bet",
+    classic: "understood or agreed",
+    genz: "bet",
+    definition: "A quick agreement signal used like 'okay', 'done', or 'I understand'.",
+    usageExample: "Send me the file by six. Bet.",
+    tone: "slang",
+    synonyms: ["agreed", "okay", "understood"],
+    category: "slang"
+  },
+  {
+    term: "ate",
+    classic: "performed very well",
+    genz: "ate",
+    definition: "A strong compliment meaning someone did something impressively.",
+    usageExample: "Your presentation ate because the ending was clear.",
+    tone: "slang",
+    synonyms: ["excelled", "impressed", "performed well"],
+    category: "culture"
+  },
+  {
+    term: "respectfully",
+    classic: "politely but directly",
+    genz: "respectfully",
+    definition: "A tone marker that makes critique feel more controlled and less confrontational.",
+    usageExample: "Respectfully, this plan needs more time.",
+    tone: "formal",
+    synonyms: ["politely", "with respect", "carefully"],
+    category: "formal"
+  },
+  {
+    term: "concerned",
+    classic: "worried in a careful way",
+    genz: "worried",
+    definition: "A formal emotional signal that shows care without sounding dramatic.",
+    usageExample: "I am concerned that the deadline may be unrealistic.",
+    tone: "formal",
+    synonyms: ["worried", "uneasy", "careful"],
+    category: "emotion"
+  },
+  {
+    term: "clarity",
+    classic: "easy to understand",
+    genz: "clear",
+    definition: "A communication goal where meaning is direct, specific, and low-confusion.",
+    usageExample: "The final section needs more clarity.",
+    tone: "neutral",
+    synonyms: ["clearness", "precision", "simplicity"],
+    category: "formal"
+  },
+  {
+    term: "tone normalized",
+    classic: "emotion made calmer and more respectful",
+    genz: "less intense",
+    definition: "The process of keeping the meaning while reducing exaggeration or social friction.",
+    usageExample: "The translator tone normalized the sentence before sending it to a teacher.",
+    tone: "neutral",
+    synonyms: ["calmed", "softened", "balanced"],
+    category: "emotion"
+  }
 ];
 
 const examples = {
@@ -54,18 +166,18 @@ const examples = {
     text: "This group project is lowkey cooked fr, nobody replied in the chat.",
     translated: "This group project feels overwhelming, and nobody has responded in the chat.",
     explanation: [
-      "Changed lowkey cooked into a clearer emotional description.",
-      "Expanded fr into a standard sincerity cue.",
-      "Kept the original concern about the group chat."
+      "Slang conversion: changed lowkey cooked into a clearer emotional description.",
+      "Tone shift: expanded fr into a standard sincerity cue.",
+      "Cultural reinterpretation: kept the original concern about the group chat."
     ]
   },
   adult_to_genz: {
     text: "I am concerned that this plan is unrealistic and may become very difficult to finish on time.",
     translated: "This plan feels kinda delulu and might get cooked before the deadline.",
     explanation: [
-      "Changed unrealistic into delulu for the target style.",
-      "Compressed very difficult into cooked.",
-      "Kept the deadline concern intact."
+      "Cultural reinterpretation: changed unrealistic into delulu for the target style.",
+      "Slang conversion: compressed very difficult into cooked.",
+      "Simplification: kept the deadline concern intact."
     ]
   }
 };
@@ -127,14 +239,44 @@ function fallbackTranslate(text, mode) {
     };
   }
 
+  if (/assignment is cooked/i.test(cleanText)) {
+    return {
+      translated: mode === "genz_to_adult"
+        ? "This assignment is very difficult."
+        : "This assignment is cooked fr.",
+      explanation: mode === "genz_to_adult"
+        ? [
+            "Slang conversion: changed cooked into very difficult.",
+            "Tone shift: removed bro to make the message more respectful.",
+            "Simplification: kept the sentence short and clear.",
+            "Emotional normalization: reduced exaggeration without losing urgency."
+          ]
+        : [
+            "Slang conversion: compressed very difficult into cooked.",
+            "Tone shift: added fr as a casual sincerity marker.",
+            "Simplification: kept the sentence direct."
+          ],
+      tone: mode === "genz_to_adult" ? "clear" : "casual",
+      readability: 0.91,
+      confidence: 0.95
+    };
+  }
+
   if (/homework is cooked/i.test(cleanText)) {
     return {
       translated: mode === "genz_to_adult"
         ? "This homework feels very difficult and overwhelming."
         : "This homework is cooked fr.",
       explanation: mode === "genz_to_adult"
-        ? ["Changed cooked into a clear difficulty signal.", "Removed casual emphasis.", "Preserved the frustration."]
-        : ["Compressed the concern into casual slang.", "Added fr as a social emphasis marker."],
+        ? [
+            "Slang conversion: changed cooked into a clear difficulty signal.",
+            "Tone shift: removed casual emphasis.",
+            "Emotional normalization: preserved the frustration without intensifying it."
+          ]
+        : [
+            "Slang conversion: compressed the concern into casual slang.",
+            "Tone shift: added fr as a social emphasis marker."
+          ],
       tone: mode === "genz_to_adult" ? "clear" : "casual",
       readability: 0.86,
       confidence: 0.91
@@ -184,9 +326,9 @@ function fallbackTranslate(text, mode) {
     ? explanation.slice(0, 4)
     : [
         mode === "genz_to_adult"
-          ? "Adjusted the tone toward clearer, more neutral wording."
-          : "Adjusted the tone toward shorter, more casual wording.",
-        "Preserved the original intent."
+          ? "Tone shift: adjusted the message toward clearer, more neutral wording."
+          : "Tone shift: adjusted the message toward shorter, more casual wording.",
+        "Simplification: preserved the original intent."
       ];
 
   return {
@@ -203,7 +345,7 @@ function buildPrompt(text, mode) {
   return [
     {
       role: "system",
-      content: "You rewrite messages between generations. Preserve meaning. Do not add facts. Return strict JSON with translated, explanation, tone, readability, and confidence."
+      content: "You power Genza, an intergenerational language bridge. Preserve meaning. Do not add facts. Transform tone, decode slang or formal phrasing, simplify readability, normalize emotional intensity, and explain cultural/context changes. Return strict JSON with translated, explanation, tone, readability, and confidence."
     },
     {
       role: "user",

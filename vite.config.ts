@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      "/translate": "http://localhost:8787",
+      "/dictionary": "http://localhost:8787",
       "/api": "http://localhost:8787"
     }
   }
